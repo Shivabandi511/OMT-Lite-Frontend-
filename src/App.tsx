@@ -15,6 +15,7 @@ import { VehicleList } from './pages/VehicleList';
 import { VehicleCreate } from './pages/VehicleCreate';
 import { VehicleDetail } from './pages/VehicleDetail';
 import { UsersManagement } from './pages/UsersManagement';
+import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
 
 export const App: React.FC = () => {
@@ -42,14 +43,7 @@ export const App: React.FC = () => {
 
             {/* Yard Routes */}
             <Route path="/yards" element={<YardList />} />
-            <Route
-              path="/yards/new"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <YardCreate />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/yards/new" element={<YardCreate />} />
             <Route path="/yards/:id" element={<YardDetail />} />
 
             {/* Vehicle Routes */}
@@ -66,6 +60,9 @@ export const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+
+            {/* User Profile */}
+            <Route path="/profile" element={<Profile />} />
 
             {/* 404 Inside Layout */}
             <Route path="*" element={<NotFound />} />

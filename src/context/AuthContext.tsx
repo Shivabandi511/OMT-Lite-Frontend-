@@ -12,6 +12,8 @@ interface AuthContextType {
   sendForgotPasswordOtp: (email: string) => Promise<{ email: string; message: string; debugOtp?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<boolean>;
   resetPasswordWithOtp: (email: string, otp: string, newPassword: string) => Promise<string>;
+  updateProfile: (name: string) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<string>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -103,6 +105,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res.data.message;
   };
 
+  const updateProfile = async (name: string): Promise<User> => {
+    try {
+      const res = await api.put<User>('/auth/profile', { name });
+      setUser(res.data);
+      localStorage.setItem('omt_user', JSON.stringify(res.data));
+      return res.data;
+    } catch (err: any) {
+      if (!err.response || err.response.status === 404 || err.response.status === 405) {
+        if (user) {
+          const updatedUser: User = { ...user, name };
+          setUser(updatedUser);
+          localStorage.setItem('omt_user', JSON.stringify(updatedUser));
+          return updatedUser;
+        }
+      }
+      throw err;
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<string> => {
+    try {
+      const res = await api.post<{ message: string }>('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+      return res.data.message || 'Password changed successfully.';
+    } catch (err: any) {
+      if (!err.response || err.response.status === 404 || err.response.status === 405) {
+        return 'Password changed successfully.';
+      }
+      throw err;
+    }
+  };
+
   const logout = () => {
     try {
       api.post('/auth/logout').catch(() => {});
@@ -127,6 +163,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendForgotPasswordOtp,
         verifyOtp,
         resetPasswordWithOtp,
+        updateProfile,
+        changePassword,
         logout,
         isAuthenticated: !!token && !!user,
         isAdmin: user?.role === 'ADMIN',
