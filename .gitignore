@@ -24,12 +24,7 @@ build/
 .env.production.local
 !.env.example
 
-# Test Results & Automation Reports (Playwright / Jest / Vitest)
-test-results/
-playwright-report/
-blob-report/
-playwright/.cache/
-coverage/
+
 
 # Vite & Bundler Caches
 .vite/

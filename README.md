@@ -98,6 +98,11 @@ Explain the distinction between the two seeded roles:
   - Each part card features an interactive **Extraction Capability Toggle** (`🟢 Can Be Extracted` / `🔴 Cannot Be Extracted`).
   - Staff can click directly on the dropdown on any part card to update whether it can be extracted or not.
   - The change updates the backend via `PATCH /api/vehicles/{vehicleId}/parts/{partId}/extraction` and recalculates the real-time Parts Breakdown progress bars.
+- **Mobile Responsiveness & Adaptive Layouts**:
+  - Breakpoints configured at `1024px`, `880px`, `768px`, and `540px`/`480px` for smartphones (such as iPhone 16 Pro) and tablets.
+  - Cards automatically stack into a single column on screens $< 880\text{px}$ to eliminate cramped layouts.
+  - Data tables use `-webkit-overflow-scrolling: touch` with minimum widths (`640px`) to provide smooth horizontal swiping without cutting off columns.
+  - Hamburger menu drawer provides complete mobile navigation without consuming screen real estate.
 - **Dynamic & Exact Pagination Architecture**:
   - Reusable component `src/components/common/Pagination.tsx` eliminates code duplication across tables.
   - Dynamically calculates the exact range (e.g. `Showing 1 to 8 of 8 results` or `Showing 11 to 20 of 35 results`), avoiding static or hardcoded text.

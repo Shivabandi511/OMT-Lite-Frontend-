@@ -62,8 +62,9 @@ export const VehicleDetail: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [selectedPartIds, setSelectedPartIds] = useState<number[]>([]);
 
-  // Active open dropdown for extraction status
+  // Active open dropdown for extraction status & lifecycle status
   const [openDropdownPartId, setOpenDropdownPartId] = useState<number | null>(null);
+  const [openStatusDropdownPartId, setOpenStatusDropdownPartId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Close dropdown on outside click
@@ -71,6 +72,7 @@ export const VehicleDetail: React.FC = () => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdownPartId(null);
+        setOpenStatusDropdownPartId(null);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -134,6 +136,50 @@ export const VehicleDetail: React.FC = () => {
         prev.map((p) => (p.id === partId ? { ...p, canBeExtracted: !canBeExtracted } : p))
       );
       setError(err.response?.data?.message || 'Failed to update extraction status.');
+    }
+  };
+
+  // Handle part lifecycle status update (PENDING, EXTRACTED, MISSING, DAMAGED)
+  const handleUpdatePartStatus = async (partId: number, newStatus: string) => {
+    if (!id) return;
+
+    // Optimistic UI update
+    setParts((prev) =>
+      prev.map((p) => (p.id === partId ? { ...p, status: newStatus } : p))
+    );
+    setOpenStatusDropdownPartId(null);
+
+    try {
+      await vehicleService.updatePartStatus(id, partId, newStatus);
+      setSuccessMsg(`Part marked as: ${newStatus === 'EXTRACTED' ? 'Extracted' : newStatus}`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      fetchData();
+      setError(err.response?.data?.message || 'Failed to update part status.');
+    }
+  };
+
+  // Handle bulk status update
+  const handleBulkUpdateStatus = async (targetStatus: string) => {
+    if (!id || selectedPartIds.length === 0) return;
+
+    const idsToUpdate = [...selectedPartIds];
+    setParts((prev) =>
+      prev.map((p) => (idsToUpdate.includes(p.id) ? { ...p, status: targetStatus } : p))
+    );
+    setSelectedPartIds([]);
+
+    try {
+      await Promise.all(
+        idsToUpdate.map((pid) => vehicleService.updatePartStatus(id, pid, targetStatus))
+      );
+      setSuccessMsg(
+        `Successfully marked ${idsToUpdate.length} part(s) as ${targetStatus === 'EXTRACTED' ? 'Extracted' : targetStatus}.`
+      );
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err: any) {
+      fetchData();
+      setError(err.response?.data?.message || 'Failed to update selected parts in bulk.');
     }
   };
 
@@ -473,7 +519,7 @@ export const VehicleDetail: React.FC = () => {
             }}
           >
             <Plus size={16} />
-            <span>+ Add Part</span>
+            <span>Add Part</span>
           </button>
         </div>
       </div>
@@ -503,14 +549,7 @@ export const VehicleDetail: React.FC = () => {
       )}
 
       {/* 3 Summary Cards Row (matching Screenshot 1) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(340px, 2fr) minmax(260px, 1.2fr) minmax(240px, 1fr)',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
+      <div className="vehicle-summary-grid">
         {/* Card 1: Vehicle Specifications */}
         <div
           style={{
@@ -532,7 +571,7 @@ export const VehicleDetail: React.FC = () => {
           </div>
 
           {/* Specs Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr', gap: '12px 16px' }}>
+          <div className="vehicle-specs-grid">
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>SOURCE</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', marginTop: 1 }}>IAAI Auto Salvage</div>
@@ -746,14 +785,7 @@ export const VehicleDetail: React.FC = () => {
       </div>
 
       {/* KPI Counters Row (matching Screenshot 1) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-          gap: 10,
-          marginBottom: 20,
-        }}
-      >
+      <div className="vehicle-kpi-grid">
         {[
           { label: 'TOTAL PARTS', val: metrics.total, color: '#7c3aed', icon: Car },
           { label: 'PENDING', val: metrics.pending, color: '#4b5563', icon: Clock },
@@ -802,20 +834,7 @@ export const VehicleDetail: React.FC = () => {
       </div>
 
       {/* Parts Inventory Toolbar */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: 12,
-          border: '1px solid #ebe8f3',
-          padding: '14px 18px',
-          marginBottom: 16,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 12,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <div className="vehicle-parts-toolbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: 15, fontWeight: 800, color: '#1f2937', margin: 0 }}>Parts Inventory</h2>
 
@@ -830,9 +849,47 @@ export const VehicleDetail: React.FC = () => {
             <span>All ({selectedPartIds.length} selected)</span>
           </label>
 
-          {/* Bulk Extraction Trigger */}
+          {/* Bulk Extraction & Status Trigger */}
           {selectedPartIds.length > 0 && (
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleBulkUpdateStatus('EXTRACTED')}
+                style={{
+                  fontSize: 11,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  border: '1px solid #bfdbfe',
+                  backgroundColor: '#eff6ff',
+                  color: '#1d4ed8',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+                title="Mark all selected parts as Extracted"
+              >
+                <CheckCircle2 size={13} />
+                <span>Mark as Extracted ({selectedPartIds.length})</span>
+              </button>
+
+              <button
+                onClick={() => handleBulkUpdateStatus('PENDING')}
+                style={{
+                  fontSize: 11,
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#f9fafb',
+                  color: '#4b5563',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                title="Revert selected parts to Pending"
+              >
+                Mark as Pending
+              </button>
+
               <button
                 onClick={() => {
                   selectedPartIds.forEach((pid) => handleToggleExtraction(pid, true));
@@ -840,7 +897,7 @@ export const VehicleDetail: React.FC = () => {
                 }}
                 style={{
                   fontSize: 11,
-                  padding: '4px 10px',
+                  padding: '5px 10px',
                   borderRadius: 6,
                   border: '1px solid #a7f3d0',
                   backgroundColor: '#ecfdf5',
@@ -849,8 +906,9 @@ export const VehicleDetail: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                Mark Selected as Can Extract
+                Can Extract
               </button>
+
               <button
                 onClick={() => {
                   selectedPartIds.forEach((pid) => handleToggleExtraction(pid, false));
@@ -858,7 +916,7 @@ export const VehicleDetail: React.FC = () => {
                 }}
                 style={{
                   fontSize: 11,
-                  padding: '4px 10px',
+                  padding: '5px 10px',
                   borderRadius: 6,
                   border: '1px solid #fecaca',
                   backgroundColor: '#fef2f2',
@@ -867,16 +925,16 @@ export const VehicleDetail: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                Mark Selected as Cannot Extract
+                Cannot Extract
               </button>
             </div>
           )}
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="vehicle-parts-filters" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {/* Search */}
-          <div style={{ position: 'relative', width: 220 }}>
+          <div className="vehicle-parts-search">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
             <input
               type="text"
@@ -978,12 +1036,7 @@ export const VehicleDetail: React.FC = () => {
       {/* Parts Grid (Card Layout matching Screenshot 1 & 4) */}
       <div
         ref={dropdownRef}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 16,
-          marginBottom: 32,
-        }}
+        className="vehicle-parts-grid"
       >
         {filteredParts.length === 0 ? (
           <div
@@ -1006,6 +1059,7 @@ export const VehicleDetail: React.FC = () => {
         ) : (
           filteredParts.map((part) => {
             const isDropdownOpen = openDropdownPartId === part.id;
+            const isStatusDropdownOpen = openStatusDropdownPartId === part.id;
             const isSelected = selectedPartIds.includes(part.id);
 
             return (
@@ -1192,28 +1246,109 @@ export const VehicleDetail: React.FC = () => {
 
                   {/* Right Status Badge & Icons */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color:
-                          part.status === 'EXTRACTED'
-                            ? '#2563eb'
+                    {/* Interactive Lifecycle Status Dropdown */}
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenStatusDropdownPartId(isStatusDropdownOpen ? null : part.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          border:
+                            part.status === 'EXTRACTED'
+                              ? '1px solid #bfdbfe'
+                              : part.status === 'MISSING'
+                              ? '1px solid #fecaca'
+                              : part.status === 'DAMAGED'
+                              ? '1px solid #fed7aa'
+                              : '1px solid #e5e7eb',
+                          backgroundColor:
+                            part.status === 'EXTRACTED'
+                              ? '#eff6ff'
+                              : part.status === 'MISSING'
+                              ? '#fef2f2'
+                              : part.status === 'DAMAGED'
+                              ? '#fff7ed'
+                              : '#f9fafb',
+                          color:
+                            part.status === 'EXTRACTED'
+                              ? '#1d4ed8'
+                              : part.status === 'MISSING'
+                              ? '#dc2626'
+                              : part.status === 'DAMAGED'
+                              ? '#c2410c'
+                              : '#4b5563',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                        title="Click to update lifecycle status"
+                      >
+                        <span>
+                          {part.status === 'EXTRACTED'
+                            ? 'Extracted'
                             : part.status === 'MISSING'
-                            ? '#ef4444'
+                            ? 'Missing'
                             : part.status === 'DAMAGED'
-                            ? '#d97706'
-                            : '#6b7280',
-                      }}
-                    >
-                      {part.status === 'EXTRACTED'
-                        ? 'Extracted'
-                        : part.status === 'MISSING'
-                        ? 'Missing'
-                        : part.status === 'DAMAGED'
-                        ? 'Damaged'
-                        : 'Pending'}
-                    </span>
+                            ? 'Damaged'
+                            : 'Pending'}
+                        </span>
+                        <ChevronDown size={11} />
+                      </button>
+
+                      {isStatusDropdownOpen && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            right: 0,
+                            marginBottom: 6,
+                            backgroundColor: '#ffffff',
+                            borderRadius: 8,
+                            border: '1px solid #e5e7eb',
+                            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.12)',
+                            zIndex: 50,
+                            minWidth: 130,
+                            overflow: 'hidden',
+                            animation: 'fadeIn 0.15s ease',
+                          }}
+                        >
+                          {[
+                            { status: 'EXTRACTED', label: 'Extracted', color: '#1d4ed8' },
+                            { status: 'PENDING', label: 'Pending', color: '#4b5563' },
+                            { status: 'MISSING', label: 'Missing', color: '#dc2626' },
+                            { status: 'DAMAGED', label: 'Damaged', color: '#c2410c' },
+                          ].map((opt) => (
+                            <button
+                              key={opt.status}
+                              type="button"
+                              onClick={() => handleUpdatePartStatus(part.id, opt.status)}
+                              style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '8px 12px',
+                                border: 'none',
+                                background: part.status === opt.status ? '#f5f3ff' : 'transparent',
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: opt.color,
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                              }}
+                            >
+                              <span>{opt.label}</span>
+                              {part.status === opt.status && <Check size={12} />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     <button
                       type="button"

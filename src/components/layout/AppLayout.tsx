@@ -628,8 +628,11 @@ export const AppLayout: React.FC = () => {
           .main-layout {
             margin-left: 0 !important;
           }
+          header {
+            padding: 0 16px !important;
+          }
           main {
-            padding: 16px !important;
+            padding: 16px 12px 40px !important;
           }
         }
       `}</style>

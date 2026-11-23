@@ -116,14 +116,8 @@ export const Dashboard: React.FC = () => {
 
       {error && <ErrorBanner message={error} onRetry={fetchDashboardData} />}
 
-      {/* Row 1: Real Dynamic KPI Summary Cards (Stock Value & This Month Revenue Removed) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: 14,
-        }}
-      >
+      {/* Row 1: Real Dynamic KPI Summary Cards */}
+      <div className="dashboard-kpi-grid">
         {/* Card 1: VEHICLES IN YARD */}
         <div className="omt-card" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -254,14 +248,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Row 2: Real Visual Pipeline & Routing Decision Breakdown */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
-          gap: 16,
-        }}
-        className="dashboard-middle-row"
-      >
+      <div className="dashboard-middle-row">
         {/* Left Card: Dynamic Vehicle Pipeline Donut Chart */}
         <div className="omt-card" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -291,7 +278,7 @@ export const Dashboard: React.FC = () => {
             </Link>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
+          <div className="dashboard-donut-wrapper">
             {/* Real SVG Donut Chart */}
             <div style={{ position: 'relative', width: 150, height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
@@ -499,18 +486,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Real Parts Status Metrics */}
-            <div
-              style={{
-                marginTop: 6,
-                padding: '12px 14px',
-                borderRadius: 10,
-                backgroundColor: 'var(--omt-color-surface-variant, #fcfbfe)',
-                border: '1px solid var(--omt-color-border)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: 12,
-              }}
-            >
+            <div className="dashboard-parts-stats">
               <div>
                 <div style={{ color: 'var(--omt-color-text-muted)', fontSize: 11 }}>Extracted Parts</div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#059669', marginTop: 2 }}>

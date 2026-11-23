@@ -269,4 +269,52 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
     await expect(page.locator('button:has-text("Can Be Extracted")').first()).toBeVisible();
   });
 
+  test('7. Mobile Viewport Responsiveness (iPhone / Tablet)', async ({ page }) => {
+    // Set mobile viewport (iPhone 16 Pro dimensions)
+    await page.setViewportSize({ width: 440, height: 956 });
+
+    // Login as Admin
+    await loginAs(page, 'admin@omt.com', 'Admin@123');
+
+    // Go to Dashboard
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/.*dashboard/);
+
+    // Verify Hamburger button is visible on mobile
+    const hamburgerBtn = page.locator('.hamburger-btn');
+    await expect(hamburgerBtn).toBeVisible();
+
+    // Verify Dashboard Cards are rendered in stacked mobile layout
+    await expect(page.locator('text=VEHICLES IN YARD')).toBeVisible();
+    await expect(page.locator('text=Vehicle Processing Pipeline')).toBeVisible();
+    await expect(page.locator('text=Routing Decisions & Parts Status')).toBeVisible();
+    await expect(page.locator('text=Recent Vehicle Assets in Yard')).toBeVisible();
+
+    // Verify mobile drawer opens when clicking hamburger
+    await hamburgerBtn.click();
+    await page.waitForTimeout(300);
+    const sidebar = page.locator('aside');
+    await expect(sidebar).toHaveClass(/sidebar-open/);
+
+    // Verify close drawer button closes the sidebar
+    const closeBtn = page.locator('.mobile-close-btn');
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+    await page.waitForTimeout(300);
+    await expect(sidebar).not.toHaveClass(/sidebar-open/);
+
+    // Verify Vehicle Detail responsiveness on mobile
+    await page.goto('/vehicles');
+    await page.waitForTimeout(500);
+    const firstVehicleLink = page.locator('table tbody tr td a').first();
+    if (await firstVehicleLink.isVisible()) {
+      await firstVehicleLink.click();
+      await page.waitForTimeout(500);
+      await expect(page.locator('text=PARTS BREAKDOWN')).toBeVisible();
+      await expect(page.locator('text=Parts Inventory')).toBeVisible();
+      await expect(page.locator('.vehicle-summary-grid')).toBeVisible();
+      await expect(page.locator('.vehicle-kpi-grid')).toBeVisible();
+    }
+  });
+
 });
