@@ -1,5 +1,5 @@
 import api from './api';
-import type { Vehicle, VehicleCreatePayload, VehicleUpdatePayload, VehicleStatus, RoutingDecision } from '../types';
+import type { Vehicle, VehicleCreatePayload, VehicleUpdatePayload, VehicleStatus, RoutingDecision, Part } from '../types';
 
 export const vehicleService = {
   /**
@@ -44,6 +44,38 @@ export const vehicleService = {
    */
   async advanceVehicleStatus(id: number | string, status: VehicleStatus): Promise<Vehicle> {
     const res = await api.patch<Vehicle>(`/vehicles/${id}/status`, null, { params: { status } });
+    return res.data;
+  },
+
+  /**
+   * Fetch all inventory parts for a vehicle
+   */
+  async getParts(vehicleId: number | string): Promise<Part[]> {
+    const res = await api.get<Part[]>(`/vehicles/${vehicleId}/parts`);
+    return res.data;
+  },
+
+  /**
+   * Update whether a part can be extracted or not
+   */
+  async updatePartExtraction(
+    vehicleId: number | string,
+    partId: number | string,
+    canBeExtracted: boolean
+  ): Promise<Part> {
+    const res = await api.patch<Part>(`/vehicles/${vehicleId}/parts/${partId}/extraction`, { canBeExtracted });
+    return res.data;
+  },
+
+  /**
+   * Update part status (PENDING, EXTRACTED, MISSING, DAMAGED, SOLD)
+   */
+  async updatePartStatus(
+    vehicleId: number | string,
+    partId: number | string,
+    status: string
+  ): Promise<Part> {
+    const res = await api.patch<Part>(`/vehicles/${vehicleId}/parts/${partId}/status`, { status });
     return res.data;
   },
 };

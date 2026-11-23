@@ -93,6 +93,11 @@ Explain the distinction between the two seeded roles:
 - **Forward-Only Vehicle Lifecycle**: Vehicle processing status strictly advances forward:
   $$\text{RECEIVED} \longrightarrow \text{IN\_PROGRESS} \longrightarrow \text{COMPLETED}$$
 - **Asset Immutability**: Once a vehicle reaches `COMPLETED`, it becomes read-only to preserve salvage audit trails.
+- **Vehicle Parts Inventory & Extraction Workflow**:
+  - When staff clicks on any vehicle, its complete parts catalog is displayed (Body Panels, Engine, Electrical, Brakes, Suspension, Interior).
+  - Each part card features an interactive **Extraction Capability Toggle** (`🟢 Can Be Extracted` / `🔴 Cannot Be Extracted`).
+  - Staff can click directly on the dropdown on any part card to update whether it can be extracted or not.
+  - The change updates the backend via `PATCH /api/vehicles/{vehicleId}/parts/{partId}/extraction` and recalculates the real-time Parts Breakdown progress bars.
 - **Real-Time VIN Decoding**:
   - Validates standard ISO 3779 format: exactly 17 alphanumeric characters, excluding invalid letters `I`, `O`, `Q`.
   - Parses World Manufacturer Identifiers (WMI) to instantly detect Make and Model (e.g., `1HG` &rarr; Honda Accord, `WAU` &rarr; Audi A3, `5UX` &rarr; BMW X5).
@@ -150,6 +155,7 @@ The repository includes a comprehensive Playwright automation suite covering all
 3. **Yard Management**: Yard creation by Admin and Staff, and deactivation restriction enforcement.
 4. **Vehicle Asset Management & Search**: VIN lookup, status filtering, details inspection.
 5. **Real-Time VIN Decoding**: Live vehicle identification and auto-population from VIN.
+6. **Vehicle Parts & Extraction Toggle**: Display vehicle parts inventory, click part to toggle between `Can Be Extracted` and `Cannot Be Extracted`.
 
 To run the full suite:
 ```bash

@@ -335,7 +335,8 @@ export const VehicleList: React.FC = () => {
               vehicles.map((v) => (
                 <tr key={v.id}>
                   <td>
-                    <span
+                    <Link
+                      to={`/vehicles/${v.id}`}
                       style={{
                         fontFamily: 'var(--omt-font-mono)',
                         fontWeight: 700,
@@ -344,10 +345,12 @@ export const VehicleList: React.FC = () => {
                         backgroundColor: '#efe7ff',
                         padding: '3px 8px',
                         borderRadius: 6,
+                        textDecoration: 'none',
+                        display: 'inline-block',
                       }}
                     >
                       {v.assetCode}
-                    </span>
+                    </Link>
                   </td>
                   <td>
                     <span style={{ fontFamily: 'var(--omt-font-mono)', fontSize: 12, fontWeight: 600 }}>
@@ -355,9 +358,17 @@ export const VehicleList: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--omt-color-text-main)' }}>
+                    <Link
+                      to={`/vehicles/${v.id}`}
+                      style={{
+                        fontWeight: 700,
+                        color: 'var(--omt-color-text-main)',
+                        textDecoration: 'none',
+                        display: 'block',
+                      }}
+                    >
                       {v.make} {v.model}
-                    </div>
+                    </Link>
                     <div style={{ fontSize: 11, color: '#8e8d9c' }}>Year {v.manufactureYear}</div>
                   </td>
                   <td>

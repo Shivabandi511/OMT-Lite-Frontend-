@@ -103,3 +103,15 @@ export interface DashboardSummary {
   vehiclesDismantle: number;
   vehiclesKeepWhole: number;
 }
+
+export interface Part {
+  id: number;
+  partCode: string;
+  name: string;
+  category: string;
+  canBeExtracted: boolean;
+  status: 'PENDING' | 'EXTRACTED' | 'MISSING' | 'DAMAGED' | 'SOLD' | string;
+  vehicleId: number;
+  createdAt: string;
+}
+

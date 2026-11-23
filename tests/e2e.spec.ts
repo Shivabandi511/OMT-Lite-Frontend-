@@ -162,11 +162,11 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
     await viewLink.click();
     await expect(page).toHaveURL(/.*vehicles\/\d+/);
 
-    // Verify vehicle details page contents
+    // Verify vehicle details and parts inventory
     await expect(page.locator('text=VIN').first()).toBeVisible();
-    await expect(page.getByText('Assigned Yard').first()).toBeVisible();
-    await expect(page.getByText('Routing Decision').first()).toBeVisible();
-    await expect(page.getByText('Asset Workflow Progression')).toBeVisible();
+    await expect(page.locator('text=ROUTING DECISION').first()).toBeVisible();
+    await expect(page.locator('text=PARTS BREAKDOWN').first()).toBeVisible();
+    await expect(page.locator('text=Parts Inventory').first()).toBeVisible();
   });
 
   test('5. Real-Time VIN Decoding: Displays Vehicle Name and Model upon VIN Entry', async ({ page }) => {
@@ -217,6 +217,56 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
 
     await expect(page.locator('text=VIN Match:')).toBeVisible();
     await expect(page.locator('text=2020 Audi A3 Sportback')).toBeVisible();
+  });
+
+  test('6. Staff Vehicle Parts & Extraction Toggle Workflow', async ({ page }) => {
+    // 1. Login as Staff
+    await loginAs(page, 'staff@omt.com', 'Staff@123');
+
+    // 2. Go to Vehicles
+    await page.goto('/vehicles');
+    await expect(page).toHaveURL(/.*vehicles/);
+
+    // 3. Click on the first vehicle to view its parts
+    const firstVehicleLink = page.locator('table.omt-table tbody tr a').first();
+    await expect(firstVehicleLink).toBeVisible();
+    await firstVehicleLink.click();
+    await expect(page).toHaveURL(/.*vehicles\/\d+/);
+
+    // 4. Verify parts inventory is displayed
+    await expect(page.locator('text=Parts Inventory')).toBeVisible();
+    await expect(page.locator('text=PARTS BREAKDOWN')).toBeVisible();
+    await expect(page.locator('text=TOTAL PARTS')).toBeVisible();
+
+    // 5. Locate an extraction status button on a part card
+    const extractionBtn = page.locator('button:has-text("Can Be Extracted")').first();
+    await expect(extractionBtn).toBeVisible();
+
+    // 6. Click the button to open dropdown
+    await extractionBtn.click();
+    await page.waitForTimeout(300);
+
+    // 7. Verify the dropdown shows "Cannot Be Extracted" option
+    const cannotExtractOption = page.locator('button:has-text("Cannot Be Extracted")').first();
+    await expect(cannotExtractOption).toBeVisible();
+
+    // 8. Click "Cannot Be Extracted" to update
+    await cannotExtractOption.click();
+    await page.waitForTimeout(500);
+
+    // 9. Verify the button has updated to "Cannot Be Extracted"
+    const updatedBtn = page.locator('button:has-text("Cannot Be Extracted")').first();
+    await expect(updatedBtn).toBeVisible();
+
+    // 10. Click again and toggle back to "Can Be Extracted"
+    await updatedBtn.click();
+    await page.waitForTimeout(300);
+    const canExtractOption = page.locator('button:has-text("Can Be Extracted")').first();
+    await expect(canExtractOption).toBeVisible();
+    await canExtractOption.click();
+    await page.waitForTimeout(500);
+
+    await expect(page.locator('button:has-text("Can Be Extracted")').first()).toBeVisible();
   });
 
 });
