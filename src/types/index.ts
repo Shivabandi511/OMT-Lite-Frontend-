@@ -102,6 +102,10 @@ export interface DashboardSummary {
   vehiclesCompleted: number;
   vehiclesDismantle: number;
   vehiclesKeepWhole: number;
+  totalParts?: number;
+  extractedParts?: number;
+  pendingParts?: number;
+  extractableParts?: number;
 }
 
 export interface Part {
