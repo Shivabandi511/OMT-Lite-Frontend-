@@ -1,5 +1,6 @@
 /* OMT Platform Design Tokens & Base Theme */
-:root {
+:root,
+[data-theme="light"] {
   --omt-color-primary: #8633f3;
   --omt-color-primary-container: #7115d6;
   --omt-color-primary-fixed: #efe7ff;
@@ -11,10 +12,10 @@
   --omt-color-secondary-container: #d9dff5;
   --omt-color-on-secondary-container: #5c6274;
 
-  --omt-color-background: #f2effb;
-  --omt-aurora: radial-gradient(1100px 560px at 10% -8%, rgba(124, 58, 237, 0.18), transparent 60%),
-                radial-gradient(950px 520px at 96% -4%, rgba(192, 38, 211, 0.13), transparent 55%),
-                radial-gradient(900px 720px at 55% 112%, rgba(99, 102, 241, 0.13), transparent 55%);
+  --omt-color-background: #f4f1fa;
+  --omt-aurora: radial-gradient(1100px 560px at 10% -8%, rgba(124, 58, 237, 0.14), transparent 60%),
+                radial-gradient(950px 520px at 96% -4%, rgba(192, 38, 211, 0.10), transparent 55%),
+                radial-gradient(900px 720px at 55% 112%, rgba(99, 102, 241, 0.10), transparent 55%);
 
   --omt-color-surface: #ffffff;
   --omt-color-surface-variant: #f8f7fc;
@@ -24,6 +25,8 @@
   --omt-color-text-main: #0f0d1e;
   --omt-color-text-muted: #5f5f6c;
   --omt-color-text-light: #8e8d9c;
+  --omt-header-bg: rgba(244, 241, 251, 0.94);
+  --omt-card-bg: #ffffff;
 
   /* Sidebar Tokens (Dark OMT Theme) */
   --omt-color-sidebar: #181328;
@@ -50,6 +53,24 @@
   --omt-radius-xl: 18px;
   --omt-shadow-card: 0 4px 20px -2px rgba(15, 13, 30, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
   --omt-shadow-glow: 0 8px 24px -6px rgba(134, 51, 243, 0.35);
+}
+
+[data-theme="dark"] {
+  --omt-color-background: #0f0b1a;
+  --omt-aurora: radial-gradient(1100px 560px at 10% -8%, rgba(124, 58, 237, 0.22), transparent 60%),
+                radial-gradient(950px 520px at 96% -4%, rgba(192, 38, 211, 0.15), transparent 55%),
+                radial-gradient(900px 720px at 55% 112%, rgba(99, 102, 241, 0.15), transparent 55%);
+  --omt-color-surface: #181328;
+  --omt-color-surface-variant: #1f1934;
+  --omt-color-border: #2e2648;
+  --omt-color-border-subtle: #241d3b;
+  
+  --omt-color-text-main: #f5f3ff;
+  --omt-color-text-muted: #a39eb8;
+  --omt-color-text-light: #7b7593;
+  --omt-header-bg: rgba(24, 19, 40, 0.95);
+  --omt-card-bg: #181328;
+  --omt-shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -239,20 +260,23 @@ body {
 
 /* Card Container */
 .omt-card {
-  background: #ffffff;
+  background: var(--omt-color-surface, #ffffff);
   border: 1px solid var(--omt-color-border);
   border-radius: var(--omt-radius-lg);
   box-shadow: var(--omt-shadow-card);
   padding: 24px;
+  color: var(--omt-color-text-main);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 /* OMT Table */
 .omt-table-wrapper {
-  background: #ffffff;
+  background: var(--omt-color-surface, #ffffff);
   border: 1px solid var(--omt-color-border);
   border-radius: var(--omt-radius-lg);
   box-shadow: var(--omt-shadow-card);
   overflow: hidden;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .omt-table {
@@ -274,12 +298,12 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #e5e0f7;
-  border-bottom: 1px solid #342e48;
+  border-bottom: 1px solid var(--omt-color-sidebar-border, #342e48);
 }
 
 .omt-table td {
   padding: 14px 18px;
-  border-bottom: 1px solid #f1f0f7;
+  border-bottom: 1px solid var(--omt-color-border-subtle, #f1f0f7);
   color: var(--omt-color-text-main);
   font-weight: 500;
   vertical-align: middle;
@@ -290,7 +314,7 @@ body {
 }
 
 .omt-table tbody tr:hover {
-  background-color: #f8f6fe;
+  background-color: var(--omt-color-surface-variant, #f8f6fe);
 }
 
 .omt-table tbody tr:last-child td {

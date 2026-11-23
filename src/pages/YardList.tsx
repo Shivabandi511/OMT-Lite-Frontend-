@@ -4,6 +4,7 @@ import yardService from '../services/yardService';
 import type { Yard, YardStatus } from '../types';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
 import { ErrorBanner } from '../components/common/ErrorBanner';
+import { Pagination } from '../components/common/Pagination';
 import {
   RiSearchLine,
   RiAddLine,
@@ -18,6 +19,8 @@ export const YardList: React.FC = () => {
   const [yards, setYards] = useState<Yard[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<YardStatus | ''>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export const YardList: React.FC = () => {
 
       const data = await yardService.getYards(params);
       setYards(data);
+      setCurrentPage(1);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load yards');
     } finally {
@@ -348,7 +352,9 @@ export const YardList: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                yards.map((yard, index) => (
+                yards
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((yard, index) => (
                   <tr
                     key={yard.id}
                     style={{
@@ -468,42 +474,15 @@ export const YardList: React.FC = () => {
           </table>
         </div>
 
-        {/* Footer pagination matching Screenshot 3.2 */}
-        <div
-          style={{
-            padding: '12px 20px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: '#ffffff',
-            borderTop: '1px solid #ebe8f3',
-            fontSize: 12,
-            color: '#6b7280',
-          }}
-        >
-          <div>
-            Showing 1 to {yards.length} of {yards.length} results
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 4,
-                backgroundColor: '#8633f3',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 12,
-              }}
-            >
-              1
-            </span>
-            <span style={{ color: '#9ca3af', fontSize: 12 }}>20 / page</span>
-          </div>
-        </div>
+        {/* Dynamic Pagination matching Screenshot 3.2 */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={yards.length}
+          pageSize={pageSize}
+          pageSizeOptions={[5, 10, 20, 50]}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* New Yard Modal matching Screenshot 3.1 & 3.2 */}

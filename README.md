@@ -98,6 +98,11 @@ Explain the distinction between the two seeded roles:
   - Each part card features an interactive **Extraction Capability Toggle** (`🟢 Can Be Extracted` / `🔴 Cannot Be Extracted`).
   - Staff can click directly on the dropdown on any part card to update whether it can be extracted or not.
   - The change updates the backend via `PATCH /api/vehicles/{vehicleId}/parts/{partId}/extraction` and recalculates the real-time Parts Breakdown progress bars.
+- **Dynamic & Exact Pagination Architecture**:
+  - Reusable component `src/components/common/Pagination.tsx` eliminates code duplication across tables.
+  - Dynamically calculates the exact range (e.g. `Showing 1 to 8 of 8 results` or `Showing 11 to 20 of 35 results`), avoiding static or hardcoded text.
+  - Supports configurable page sizes (`5`, `10`, `20`, `50` / page), previous/next arrow navigation, and active page highlighting with responsive mobile wrapping.
+  - Slices data client-side (`(currentPage - 1) * pageSize` to `currentPage * pageSize`) and resets back to page 1 automatically whenever search terms or filters change.
 - **Real-Time VIN Decoding**:
   - Validates standard ISO 3779 format: exactly 17 alphanumeric characters, excluding invalid letters `I`, `O`, `Q`.
   - Parses World Manufacturer Identifiers (WMI) to instantly detect Make and Model (e.g., `1HG` &rarr; Honda Accord, `WAU` &rarr; Audi A3, `5UX` &rarr; BMW X5).

@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorBanner } from '../components/common/ErrorBanner';
+import { Pagination } from '../components/common/Pagination';
 import {
   Search,
   Plus,
@@ -29,6 +30,8 @@ export const VehicleList: React.FC = () => {
   const [yardFilter, setYardFilter] = useState<string>('');
   const [routingFilter, setRoutingFilter] = useState<RoutingDecision | ''>('');
   const [statusFilter, setStatusFilter] = useState<VehicleStatus | ''>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +54,7 @@ export const VehicleList: React.FC = () => {
 
       const data = await vehicleService.getVehicles(params);
       setVehicles(data);
+      setCurrentPage(1);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch vehicles');
     } finally {
@@ -332,7 +336,9 @@ export const VehicleList: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              vehicles.map((v) => (
+              vehicles
+                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                .map((v) => (
                 <tr key={v.id}>
                   <td>
                     <Link
@@ -412,6 +418,16 @@ export const VehicleList: React.FC = () => {
             )}
           </tbody>
         </table>
+
+        {/* Dynamic Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={vehicles.length}
+          pageSize={pageSize}
+          pageSizeOptions={[5, 10, 20, 50]}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
     </div>
   );

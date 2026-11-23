@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { OmtLogoLoader } from '../common/OmtLogoLoader';
@@ -13,6 +13,7 @@ import {
   FiPackage,
   FiUser,
   FiMoon,
+  FiSun,
   FiMenu,
   FiX,
 } from 'react-icons/fi';
@@ -22,6 +23,22 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Theme state persisted in localStorage
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('omt_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('omt_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   // Collapse state persisted in localStorage
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -478,14 +495,15 @@ export const AppLayout: React.FC = () => {
             position: 'sticky',
             top: 0,
             zIndex: 40,
-            backgroundColor: 'rgba(244, 241, 251, 0.94)',
+            backgroundColor: 'var(--omt-header-bg, rgba(244, 241, 251, 0.94))',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            borderBottom: '1px solid #e5e2ed',
+            borderBottom: '1px solid var(--omt-color-border, #e5e2ed)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0 28px',
+            transition: 'background-color 0.2s ease, border-color 0.2s ease',
           }}
         >
           {/* Left: Mobile menu toggle & Breadcrumb Tab with purple underline */}
@@ -525,21 +543,22 @@ export const AppLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Header items: Moon icon & ST Avatar matching screenshot */}
+          {/* Right Header items: Theme toggle & ST Avatar matching screenshot */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Moon Icon */}
+            {/* Theme Toggle Button (Sun / Moon) */}
             <button
+              onClick={toggleTheme}
               style={{
-                background: 'none',
+                background: 'transparent',
                 border: 'none',
-                color: '#4b5563',
+                color: theme === 'dark' ? '#fbbf24' : '#4b5563',
                 cursor: 'pointer',
-                padding: 6,
+                padding: 8,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '50%',
-                transition: 'background-color 0.15s ease',
+                transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'rgba(134, 51, 243, 0.1)';
@@ -547,9 +566,10 @@ export const AppLayout: React.FC = () => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
-              title="Toggle theme"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme"
             >
-              <FiMoon size={18} />
+              {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
             </button>
 
             {/* ST Purple Circle Avatar matching screenshot */}
