@@ -46,7 +46,7 @@ export const authService = {
     message: string;
     debugOtp?: string;
   }> {
-    const res = await api.post('/auth/mfa/init', { email, password });
+    const res = await api.post('/auth/login-mfa-init', { email, password });
     return res.data;
   },
 
@@ -54,7 +54,7 @@ export const authService = {
    * Verify MFA OTP during login
    */
   async loginMfaVerify(email: string, otp: string): Promise<{ token: string; user: User }> {
-    const res = await api.post<{ token: string; user: User }>('/auth/mfa/verify', { email, otp });
+    const res = await api.post<{ token: string; user: User }>('/auth/login-mfa-verify', { email, otp });
     return res.data;
   },
 
@@ -62,7 +62,7 @@ export const authService = {
    * Send forgot password OTP
    */
   async sendForgotPasswordOtp(email: string): Promise<{ email: string; message: string; debugOtp?: string }> {
-    const res = await api.post('/auth/password/forgot', { email });
+    const res = await api.post('/auth/forgot-password', { email });
     return res.data;
   },
 
@@ -70,7 +70,7 @@ export const authService = {
    * Verify forgot password OTP
    */
   async verifyOtp(email: string, otp: string): Promise<{ valid: boolean }> {
-    const res = await api.post('/auth/password/verify-otp', { email, otp });
+    const res = await api.post('/auth/verify-otp', { email, otp });
     return res.data;
   },
 
@@ -78,7 +78,7 @@ export const authService = {
    * Reset password with verified OTP
    */
   async resetPasswordWithOtp(email: string, otp: string, newPassword: string): Promise<{ message: string }> {
-    const res = await api.post('/auth/password/reset', { email, otp, newPassword });
+    const res = await api.post('/auth/reset-password', { email, otp, newPassword });
     return res.data;
   },
 

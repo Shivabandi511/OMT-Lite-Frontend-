@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import dashboardService from '../services/dashboardService';
 import type { DashboardSummary } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { ErrorBanner } from '../components/common/ErrorBanner';
 import {
   Warehouse,
   Car,
@@ -24,8 +25,8 @@ export const Dashboard: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await api.get<DashboardSummary>('/dashboard');
-      setSummary(res.data);
+      const data = await dashboardService.getDashboardSummary();
+      setSummary(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch dashboard metrics');
     } finally {
@@ -91,21 +92,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div
-          style={{
-            backgroundColor: '#fee2e2',
-            color: '#991b1b',
-            padding: '12px 16px',
-            borderRadius: 10,
-            marginBottom: 24,
-            border: '1px solid #fecaca',
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchDashboardData} />}
 
       {/* KPI Cards Grid */}
       <div

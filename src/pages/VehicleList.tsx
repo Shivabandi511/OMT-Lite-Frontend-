@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import vehicleService from '../services/vehicleService';
+import yardService from '../services/yardService';
 import type { Vehicle, Yard, RoutingDecision, VehicleStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { StatusBadge } from '../components/common/StatusBadge';
+import { EmptyState } from '../components/common/EmptyState';
+import { ErrorBanner } from '../components/common/ErrorBanner';
 import {
   Search,
   Plus,
@@ -32,10 +36,10 @@ export const VehicleList: React.FC = () => {
 
   // Load yards for filter dropdown
   useEffect(() => {
-    api.get<Yard[]>('/yards').then((res) => setYards(res.data)).catch(() => {});
+    yardService.getYards().then(setYards).catch(() => {});
   }, []);
 
-  const fetchVehicles = async () => {
+  const fetchVehicles = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -45,21 +49,21 @@ export const VehicleList: React.FC = () => {
       if (routingFilter) params.routingDecision = routingFilter;
       if (statusFilter) params.status = statusFilter;
 
-      const res = await api.get<Vehicle[]>('/vehicles', { params });
-      setVehicles(res.data);
+      const data = await vehicleService.getVehicles(params);
+      setVehicles(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch vehicles');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, yardFilter, routingFilter, statusFilter]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchVehicles();
     }, 250);
     return () => clearTimeout(delayDebounce);
-  }, [searchTerm, yardFilter, routingFilter, statusFilter]);
+  }, [fetchVehicles]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -288,20 +292,7 @@ export const VehicleList: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div
-          style={{
-            backgroundColor: '#fee2e2',
-            color: '#991b1b',
-            padding: '12px 16px',
-            borderRadius: 10,
-            marginBottom: 20,
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchVehicles} />}
 
       {/* Vehicles Table */}
       <div className="omt-table-wrapper">
@@ -326,9 +317,18 @@ export const VehicleList: React.FC = () => {
               </tr>
             ) : vehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#8e8d9c' }}>
-                  <Car size={32} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
-                  <div>No vehicles found matching criteria.</div>
+                <td colSpan={7} style={{ padding: '24px 0' }}>
+                  <EmptyState
+                    icon={Car}
+                    title="No vehicles found"
+                    description={
+                      searchTerm || yardFilter || routingFilter || statusFilter
+                        ? 'No vehicles match your active search and filter criteria. Try clearing filters.'
+                        : 'No vehicle assets registered yet.'
+                    }
+                    actionText={searchTerm || yardFilter || routingFilter || statusFilter ? 'Reset Filters' : undefined}
+                    onAction={searchTerm || yardFilter || routingFilter || statusFilter ? resetFilters : undefined}
+                  />
                 </td>
               </tr>
             ) : (
@@ -367,20 +367,11 @@ export const VehicleList: React.FC = () => {
                     <div style={{ fontSize: 11, color: '#8e8d9c' }}>{v.yardCode}</div>
                   </td>
                   <td>
-                    <span
-                      className={`badge-status ${
-                        v.routingDecision === 'DISMANTLE' ? 'badge-dismantle' : 'badge-keep_whole'
-                      }`}
-                    >
-                      {v.routingDecision}
-                    </span>
+                    <StatusBadge status={v.routingDecision} size="sm" />
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className={`badge-status badge-${v.status.toLowerCase()}`}>
-                        <span className="badge-status-dot" />
-                        {v.status}
-                      </span>
+                      <StatusBadge status={v.status} size="sm" />
                       {v.status === 'COMPLETED' && (
                         <span
                           title="Completed vehicles are read-only"

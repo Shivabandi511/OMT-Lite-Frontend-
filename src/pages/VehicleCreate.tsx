@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../services/api';
+import yardService from '../services/yardService';
+import vehicleService from '../services/vehicleService';
 import type { Yard, RoutingDecision } from '../types';
-import { ArrowLeft, Save, Car, AlertCircle, Info, Check, Sparkles } from 'lucide-react';
+import { ErrorBanner } from '../components/common/ErrorBanner';
+import { ArrowLeft, Save, Car, Info, Check, Sparkles } from 'lucide-react';
 import { decodeVinLocally, decodeVinAsync } from '../utils/vinDecoder';
 import type { DecodedVin } from '../utils/vinDecoder';
 
@@ -32,10 +34,10 @@ export const VehicleCreate: React.FC = () => {
     const fetchActiveYards = async () => {
       try {
         setIsLoadingYards(true);
-        const res = await api.get<Yard[]>('/yards', { params: { status: 'ACTIVE' } });
-        setActiveYards(res.data);
-        if (res.data.length > 0) {
-          setFormData((prev) => ({ ...prev, yardId: String(res.data[0].id) }));
+        const data = await yardService.getYards({ status: 'ACTIVE' });
+        setActiveYards(data);
+        if (data.length > 0) {
+          setFormData((prev) => ({ ...prev, yardId: String(data[0].id) }));
         }
       } catch (err: any) {
         setGeneralError('Failed to load active yards list.');
@@ -170,8 +172,8 @@ export const VehicleCreate: React.FC = () => {
         manufactureYear: Number(formData.manufactureYear),
       };
 
-      const res = await api.post('/vehicles', payload);
-      navigate(`/vehicles/${res.data.id}`);
+      const newVehicle = await vehicleService.createVehicle(payload);
+      navigate(`/vehicles/${newVehicle.id}`);
     } catch (err: any) {
       if (err.response?.data?.fieldErrors) {
         setErrors(err.response.data.fieldErrors);
@@ -275,24 +277,7 @@ export const VehicleCreate: React.FC = () => {
           </div>
         </div>
 
-        {generalError && (
-          <div
-            style={{
-              backgroundColor: '#fee2e2',
-              color: '#991b1b',
-              padding: '12px 16px',
-              borderRadius: 10,
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              fontSize: 13,
-            }}
-          >
-            <AlertCircle size={16} />
-            <span>{generalError}</span>
-          </div>
-        )}
+        {generalError && <ErrorBanner message={generalError} />}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* VIN Field */}

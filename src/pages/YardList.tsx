@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import yardService from '../services/yardService';
 import type { Yard, YardStatus } from '../types';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
+import { ErrorBanner } from '../components/common/ErrorBanner';
 import {
   RiSearchLine,
   RiAddLine,
@@ -10,7 +11,6 @@ import {
   RiEyeLine,
   RiEditLine,
   RiCloseLine,
-  RiAlertLine,
   RiCheckLine,
 } from 'react-icons/ri';
 
@@ -35,7 +35,7 @@ export const YardList: React.FC = () => {
     address2: '',
   });
 
-  const fetchYards = async () => {
+  const fetchYards = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -43,21 +43,21 @@ export const YardList: React.FC = () => {
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (statusFilter) params.status = statusFilter;
 
-      const res = await api.get<Yard[]>('/yards', { params });
-      setYards(res.data);
+      const data = await yardService.getYards(params);
+      setYards(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load yards');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchYards();
     }, 200);
     return () => clearTimeout(delayDebounce);
-  }, [searchTerm, statusFilter]);
+  }, [fetchYards]);
 
   // Compute preview auto yard code based on selected country
   const getAutoCodePreview = () => {
@@ -103,7 +103,7 @@ export const YardList: React.FC = () => {
         ? `${formData.address.trim()}, ${formData.address2.trim()}`
         : formData.address.trim();
 
-      await api.post('/yards', {
+      await yardService.createYard({
         name: formData.name.trim(),
         country: formData.country.trim(),
         city: formData.city.trim(),
@@ -215,26 +215,7 @@ export const YardList: React.FC = () => {
         </div>
       )}
 
-      {error && (
-        <div
-          style={{
-            backgroundColor: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fecaca',
-            padding: '12px 16px',
-            borderRadius: 8,
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          <RiAlertLine size={18} color="#dc2626" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchYards} />}
 
       {/* Search and Filter Bar */}
       <div
