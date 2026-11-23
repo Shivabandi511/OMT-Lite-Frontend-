@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import type { Yard, RoutingDecision } from '../types';
-import { ArrowLeft, Save, Car, AlertCircle, Info, Check } from 'lucide-react';
+import { ArrowLeft, Save, Car, AlertCircle, Info, Check, Sparkles } from 'lucide-react';
+import { decodeVinLocally, decodeVinAsync } from '../utils/vinDecoder';
+import type { DecodedVin } from '../utils/vinDecoder';
 
 export const VehicleCreate: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ export const VehicleCreate: React.FC = () => {
     notes: '',
   });
 
+  const [decodedInfo, setDecodedInfo] = useState<DecodedVin | null>(null);
+  const [isDecoding, setIsDecoding] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +46,7 @@ export const VehicleCreate: React.FC = () => {
     fetchActiveYards();
   }, []);
 
-  const handleVinChange = (val: string) => {
+  const handleVinChange = async (val: string) => {
     // Upper case and trim
     const upper = val.toUpperCase().trim();
     setFormData((prev) => ({ ...prev, vin: upper }));
@@ -64,6 +68,51 @@ export const VehicleCreate: React.FC = () => {
         delete copy.vin;
         return copy;
       });
+    }
+
+    // Auto-decode vehicle name, model, make, and year
+    if (upper.length >= 3 && !/[IOQ]/.test(upper)) {
+      const local = decodeVinLocally(upper);
+      if (local) {
+        setDecodedInfo(local);
+        setFormData((prev) => ({
+          ...prev,
+          make: local.make,
+          model: local.model,
+          manufactureYear: local.year,
+        }));
+        // Clear errors on make & model if auto-filled
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy.make;
+          delete copy.model;
+          delete copy.manufactureYear;
+          return copy;
+        });
+      }
+
+      // If full 17 characters, perform deeper async decode (e.g. NHTSA)
+      if (upper.length === 17) {
+        setIsDecoding(true);
+        try {
+          const asyncDecoded = await decodeVinAsync(upper);
+          if (asyncDecoded) {
+            setDecodedInfo(asyncDecoded);
+            setFormData((prev) => ({
+              ...prev,
+              make: asyncDecoded.make,
+              model: asyncDecoded.model,
+              manufactureYear: asyncDecoded.year,
+            }));
+          }
+        } catch {
+          // Keep local if async failed
+        } finally {
+          setIsDecoding(false);
+        }
+      }
+    } else if (upper.length < 3) {
+      setDecodedInfo(null);
     }
   };
 
@@ -284,6 +333,145 @@ export const VehicleCreate: React.FC = () => {
               <span style={{ fontSize: 11, color: '#ef4444', marginTop: 4, display: 'block' }}>
                 {errors.vin}
               </span>
+            )}
+
+            {/* Quick Sample VIN Selector */}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: '#8e8d9c', fontWeight: 600 }}>Quick Fill Sample VIN:</span>
+              {[
+                { label: 'Honda Accord', vin: '1HGCR2F83HA001924' },
+                { label: 'Audi A3', vin: 'WAUZZZ8V7FA018492' },
+                { label: 'BMW X5', vin: '5UXCR6C05L9B83719' },
+                { label: 'Toyota Camry', vin: '4T4BF1FK4CR210847' },
+                { label: 'VW Golf', vin: '3VW2K7AJ4EM190284' },
+              ].map((s) => (
+                <button
+                  key={s.vin}
+                  type="button"
+                  onClick={() => handleVinChange(s.vin)}
+                  style={{
+                    fontSize: 11,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #dcd7ee',
+                    backgroundColor: '#faf8fe',
+                    color: '#6339a8',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Decoded Vehicle Name & Model Display Banner */}
+            {decodedInfo && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: '14px 16px',
+                  backgroundColor: '#f5f0ff',
+                  border: '1.5px solid #d8b4fe',
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                  boxShadow: '0 2px 8px rgba(118, 44, 203, 0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 10,
+                      backgroundColor: 'var(--omt-color-primary)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Car size={22} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: '#7e22ce',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Sparkles size={12} />
+                        VIN Decoded Vehicle
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          backgroundColor: '#e9d5ff',
+                          color: '#6b21a8',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {decodedInfo.source.toUpperCase()}
+                      </span>
+                      {isDecoding && (
+                        <span style={{ fontSize: 10, color: '#8e8d9c', fontStyle: 'italic' }}>
+                          Refining with NHTSA...
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 800,
+                        color: '#3b0764',
+                        marginTop: 2,
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      {decodedInfo.displayName}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b21a8', marginTop: 2 }}>
+                      Vehicle Name: <strong style={{ color: '#3b0764' }}>{decodedInfo.make} {decodedInfo.model}</strong>
+                      {' • '}
+                      Model: <strong style={{ color: '#3b0764' }}>{decodedInfo.model}</strong>
+                      {' • '}
+                      Year: <strong style={{ color: '#3b0764' }}>{decodedInfo.year}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12,
+                    color: '#059669',
+                    fontWeight: 700,
+                    backgroundColor: '#ecfdf5',
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    border: '1px solid #a7f3d0',
+                  }}
+                >
+                  <Check size={14} />
+                  <span>Auto-filled below</span>
+                </div>
+              </div>
             )}
           </div>
 

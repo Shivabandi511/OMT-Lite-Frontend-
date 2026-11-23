@@ -13,7 +13,9 @@ import {
   Lock,
   RotateCcw,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
+import { decodeVinLocally } from '../utils/vinDecoder';
 
 export const VehicleList: React.FC = () => {
   const { canMakeOperations, isStaff } = useAuth();
@@ -25,6 +27,8 @@ export const VehicleList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<VehicleStatus | ''>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const decodedSearchVin = searchTerm.trim().length >= 3 ? decodeVinLocally(searchTerm.trim()) : null;
 
   // Load yards for filter dropdown
   useEffect(() => {
@@ -175,6 +179,32 @@ export const VehicleList: React.FC = () => {
                 backgroundColor: '#faf9fd',
               }}
             />
+            {decodedSearchVin && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: 4,
+                  zIndex: 10,
+                  backgroundColor: '#f5f0ff',
+                  border: '1px solid #d8b4fe',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 11,
+                  color: '#6b21a8',
+                  boxShadow: '0 4px 12px rgba(107, 33, 168, 0.1)',
+                }}
+              >
+                <Sparkles size={12} color="#7e22ce" />
+                <span>
+                  VIN Match: <strong>{decodedSearchVin.displayName}</strong> (Make: {decodedSearchVin.make}, Model: {decodedSearchVin.model})
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Yard Filter */}

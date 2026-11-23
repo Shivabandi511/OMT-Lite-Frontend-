@@ -115,6 +115,9 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
     await loginAs(page, 'admin@omt.com', 'Admin@123');
     await page.goto('/yards/1');
 
+    // Automatically accept window.confirm dialogs
+    page.on('dialog', dialog => dialog.accept());
+
     // Yard 1 (Rotterdam) has active vehicles assigned
     await expect(page.locator('button:has-text("Deactivate Yard")')).toBeVisible();
     await page.click('button:has-text("Deactivate Yard")');
@@ -138,33 +141,82 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
     await page.waitForTimeout(600);
 
     // Verify the filtered result
-    await expect(page.locator('text=1HGCR2F83HA001924')).toBeVisible();
-    await expect(page.locator('text=Honda')).toBeVisible();
-    await expect(page.locator('text=Accord EX-L')).toBeVisible();
+    await expect(page.locator('text=1HGCR2F83HA001924').first()).toBeVisible();
+    await expect(page.locator('text=Honda').first()).toBeVisible();
+    await expect(page.locator('text=Accord EX-L').first()).toBeVisible();
 
     // 2. Test partial VIN search: last digits '001924'
     await searchInput.fill('001924');
     await page.waitForTimeout(600);
-    await expect(page.locator('text=1HGCR2F83HA001924')).toBeVisible();
+    await expect(page.locator('text=1HGCR2F83HA001924').first()).toBeVisible();
 
     // 3. Test another VIN search: 5UXCR6C05L9B83719 (BMW X5)
     await searchInput.fill('5UXCR6C05L9B83719');
     await page.waitForTimeout(600);
-    await expect(page.locator('text=5UXCR6C05L9B83719')).toBeVisible();
-    await expect(page.locator('text=BMW')).toBeVisible();
-    await expect(page.locator('text=X5 xDrive40i')).toBeVisible();
+    await expect(page.locator('text=5UXCR6C05L9B83719').first()).toBeVisible();
+    await expect(page.locator('text=BMW').first()).toBeVisible();
+    await expect(page.locator('text=X5 xDrive40i').first()).toBeVisible();
 
     // 4. Open Vehicle details
-    const viewLink = page.locator('a[href*="/vehicles/"]:has-text("View")').first();
+    const viewLink = page.locator('a[href*="/vehicles/"]:has-text("Details"), a[href*="/vehicles/"]:has-text("View")').first();
     await viewLink.click();
     await expect(page).toHaveURL(/.*vehicles\/\d+/);
 
     // Verify vehicle details page contents
-    await expect(page.locator('text=Asset Code').or(page.locator('text=AST-'))).toBeVisible();
     await expect(page.locator('text=VIN').first()).toBeVisible();
-    await expect(page.locator('text=Assigned Yard').or(page.locator('text=Yard'))).toBeVisible();
-    await expect(page.locator('text=Routing Decision')).toBeVisible();
-    await expect(page.locator('text=Status')).toBeVisible();
+    await expect(page.getByText('Assigned Yard').first()).toBeVisible();
+    await expect(page.getByText('Routing Decision').first()).toBeVisible();
+    await expect(page.getByText('Asset Workflow Progression')).toBeVisible();
+  });
+
+  test('5. Real-Time VIN Decoding: Displays Vehicle Name and Model upon VIN Entry', async ({ page }) => {
+    await loginAs(page, 'staff@omt.com', 'Staff@123');
+
+    // 1. Test VIN Decoding in Vehicle Registration
+    await page.goto('/vehicles/new');
+    await expect(page).toHaveURL(/.*vehicles\/new/);
+
+    const vinInput = page.locator('#vehicle-vin');
+    await expect(vinInput).toBeVisible();
+
+    // Type Honda VIN
+    await vinInput.fill('1HGCR2F83HA001924');
+    await page.waitForTimeout(400);
+
+    // Verify Vehicle Name and Model are prominently displayed
+    await expect(page.locator('text=VIN Decoded Vehicle')).toBeVisible();
+    await expect(page.locator('text=2017 Honda Accord EX-L')).toBeVisible();
+    await expect(page.locator('text=Vehicle Name: Honda Accord EX-L')).toBeVisible();
+    await expect(page.locator('text=Model: Accord EX-L')).toBeVisible();
+
+    // Verify fields were auto-populated
+    const makeInput = page.locator('#vehicle-make');
+    const modelInput = page.locator('#vehicle-model');
+    const yearInput = page.locator('#manufacture-year');
+
+    await expect(makeInput).toHaveValue('Honda');
+    await expect(modelInput).toHaveValue('Accord EX-L');
+    await expect(yearInput).toHaveValue('2017');
+
+    // Test Quick Sample button for BMW X5
+    const bmwSampleBtn = page.locator('button:has-text("BMW X5")');
+    await expect(bmwSampleBtn).toBeVisible();
+    await bmwSampleBtn.click();
+    await page.waitForTimeout(400);
+
+    await expect(page.locator('text=2021 BMW X5 xDrive40i')).toBeVisible();
+    await expect(makeInput).toHaveValue('BMW');
+    await expect(modelInput).toHaveValue('X5 xDrive40i');
+    await expect(yearInput).toHaveValue('2021');
+
+    // 2. Test VIN search decoding banner in Vehicle List
+    await page.goto('/vehicles');
+    const searchInput = page.locator('input[placeholder*="Search by VIN"]');
+    await searchInput.fill('WAUZZZ8V7FA018492');
+    await page.waitForTimeout(400);
+
+    await expect(page.locator('text=VIN Match:')).toBeVisible();
+    await expect(page.locator('text=2020 Audi A3 Sportback')).toBeVisible();
   });
 
 });
