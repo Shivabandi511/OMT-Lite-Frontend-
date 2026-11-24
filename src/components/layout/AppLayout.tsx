@@ -26,8 +26,19 @@ export const AppLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/mfa/login', { replace: true });
+    try {
+      logout();
+    } finally {
+      localStorage.removeItem('omt_token');
+      localStorage.removeItem('omt_user');
+      sessionStorage.clear();
+      navigate('/mfa/login', { replace: true });
+      setTimeout(() => {
+        if (window.location.pathname !== '/mfa/login') {
+          window.location.replace('/mfa/login');
+        }
+      }, 50);
+    }
   };
 
   // Theme state persisted in localStorage

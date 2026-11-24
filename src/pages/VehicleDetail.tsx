@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
 import { ErrorBanner } from '../components/common/ErrorBanner';
 import { Pagination } from '../components/common/Pagination';
+import { ConfirmModal } from '../components/common/ConfirmModal';
+import { InfoModal } from '../components/common/InfoModal';
 import {
   Car,
   CheckCircle2,
@@ -76,6 +78,36 @@ export const VehicleDetail: React.FC = () => {
   const [openDropdownPartId, setOpenDropdownPartId] = useState<number | null>(null);
   const [openStatusDropdownPartId, setOpenStatusDropdownPartId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Application-level confirmation modal state (replaces window.confirm)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    targetStatus: VehicleStatus | null;
+    title: string;
+    message: React.ReactNode;
+    variant: 'primary' | 'warning' | 'danger';
+    confirmText: string;
+  }>({
+    isOpen: false,
+    targetStatus: null,
+    title: '',
+    message: null,
+    variant: 'primary',
+    confirmText: 'Advance Status',
+  });
+
+  // Application-level Info modal state (replaces native window.alert)
+  const [infoModal, setInfoModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle?: string;
+    content: React.ReactNode;
+  }>({
+    isOpen: false,
+    title: '',
+    subtitle: '',
+    content: null,
+  });
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -254,17 +286,57 @@ export const VehicleDetail: React.FC = () => {
     }
   };
 
-  // Status Advance Handler
-  const handleAdvanceStatus = async (targetStatus: VehicleStatus) => {
+  // Status Advance Handler - Opens application confirmation modal
+  const handleAdvanceStatus = (targetStatus: VehicleStatus) => {
     if (!vehicle || !id) return;
 
-    const confirmMessage =
-      targetStatus === 'COMPLETED'
-        ? 'Completing this vehicle will mark it as READ-ONLY. Finish dismantling?'
-        : `Advance vehicle status from ${vehicle.status} to ${targetStatus}?`;
+    const isCompleting = targetStatus === 'COMPLETED';
+    setConfirmModal({
+      isOpen: true,
+      targetStatus,
+      title: isCompleting ? 'Complete Vehicle Dismantling' : 'Advance Vehicle Status',
+      variant: isCompleting ? 'warning' : 'primary',
+      confirmText: isCompleting ? 'Complete & Lock Vehicle' : `Advance to ${targetStatus.replace('_', ' ')}`,
+      message: (
+        <div>
+          <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
+            {isCompleting ? (
+              <>
+                Completing this vehicle will mark it as <strong>READ-ONLY</strong>. All dismantling operations will be finalized and locked from further changes. Finish dismantling?
+              </>
+            ) : (
+              <>
+                Advance vehicle workflow status from{' '}
+                <strong style={{ color: '#7c3aed' }}>{vehicle.status}</strong> to{' '}
+                <strong style={{ color: '#2563eb' }}>{targetStatus}</strong>?
+              </>
+            )}
+          </p>
+          <div
+            style={{
+              fontSize: 12,
+              color: '#4b5563',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 12,
+              paddingTop: 8,
+              borderTop: '1px solid #e5e7eb',
+            }}
+          >
+            <span>Asset: <strong>{vehicle.assetCode}</strong></span>
+            <span>VIN: <strong>{vehicle.vin}</strong></span>
+            <span>Make/Model: <strong>{vehicle.make} {vehicle.model}</strong></span>
+          </div>
+        </div>
+      ),
+    });
+  };
 
-    if (!window.confirm(confirmMessage)) return;
+  // Execution handler called when user clicks confirm in the modal
+  const handleConfirmAdvanceStatus = async () => {
+    if (!vehicle || !id || !confirmModal.targetStatus) return;
 
+    const targetStatus = confirmModal.targetStatus;
     try {
       setIsAdvancingStatus(true);
       setError(null);
@@ -273,9 +345,11 @@ export const VehicleDetail: React.FC = () => {
       const updated = await vehicleService.advanceVehicleStatus(id, targetStatus);
       setVehicle(updated);
       setSuccessMsg(`Vehicle status progressed to ${targetStatus}.`);
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to advance status');
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     } finally {
       setIsAdvancingStatus(false);
     }
@@ -837,7 +911,28 @@ export const VehicleDetail: React.FC = () => {
               </button>
 
               <button
-                onClick={() => alert(`Assigned Yard: ${vehicle.yardName}\nTechnician: Active Duty Staff`)}
+                onClick={() => {
+                  setInfoModal({
+                    isOpen: true,
+                    title: 'Yard & Technician Assignment',
+                    subtitle: `Asset ${vehicle.assetCode}`,
+                    content: (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ padding: '12px 14px', backgroundColor: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                          <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>Assigned Storage Yard</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginTop: 2 }}>{vehicle.yardName}</div>
+                        </div>
+                        <div style={{ padding: '12px 14px', backgroundColor: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                          <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>Assigned Technician / Team</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginTop: 2 }}>{(vehicle as any).dismantler || 'Staff Yard Team'}</div>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
+                          To reassign this vehicle to another facility or update technician credentials, use <strong>Edit Vehicle</strong> above.
+                        </div>
+                      </div>
+                    ),
+                  });
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -857,7 +952,38 @@ export const VehicleDetail: React.FC = () => {
               </button>
 
               <button
-                onClick={() => alert(`Vehicle Asset QR Code:\n${vehicle.assetCode}\nVIN: ${vehicle.vin}`)}
+                onClick={() => {
+                  setInfoModal({
+                    isOpen: true,
+                    title: 'Vehicle Asset QR Code',
+                    subtitle: `${vehicle.make} ${vehicle.model} (${vehicle.manufactureYear})`,
+                    content: (
+                      <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            padding: 20,
+                            backgroundColor: '#faf8fe',
+                            borderRadius: 16,
+                            border: '2px dashed #c4b5fd',
+                            marginBottom: 14,
+                          }}
+                        >
+                          <QrCode size={110} color="#7c3aed" />
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', letterSpacing: '0.04em' }}>
+                          {vehicle.assetCode}
+                        </div>
+                        <div style={{ fontSize: 13, fontFamily: 'var(--omt-font-mono, monospace)', color: '#4b5563', marginTop: 4 }}>
+                          VIN: {vehicle.vin}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#8e8d9c', marginTop: 8 }}>
+                          Scan in the yard to log parts or inspect intake documentation
+                        </div>
+                      </div>
+                    ),
+                  });
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1488,7 +1614,36 @@ export const VehicleDetail: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => alert(`Part QR: ${part.partCode}\n${part.name}`)}
+                      onClick={() => {
+                        setInfoModal({
+                          isOpen: true,
+                          title: 'Part QR Identification',
+                          subtitle: part.partCode,
+                          content: (
+                            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  padding: 16,
+                                  backgroundColor: '#faf8fe',
+                                  borderRadius: 12,
+                                  border: '2px dashed #c4b5fd',
+                                  marginBottom: 12,
+                                }}
+                              >
+                                <QrCode size={90} color="#7c3aed" />
+                              </div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{part.name}</div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                                Part Code: <strong>{part.partCode}</strong> • Category: <strong>{part.category}</strong>
+                              </div>
+                              <div style={{ fontSize: 12, color: '#059669', fontWeight: 600, marginTop: 4 }}>
+                                Status: {part.status}
+                              </div>
+                            </div>
+                          ),
+                        });
+                      }}
                       style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: 2 }}
                       title="View QR Code"
                     >
@@ -1774,6 +1929,28 @@ export const VehicleDetail: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Status Advance Confirmation Modal (Application-Level, replaces window.confirm) */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        isLoading={isAdvancingStatus}
+        onConfirm={handleConfirmAdvanceStatus}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Info Modal (Application-Level, replaces window.alert) */}
+      <InfoModal
+        isOpen={infoModal.isOpen}
+        title={infoModal.title}
+        subtitle={infoModal.subtitle}
+        onClose={() => setInfoModal((prev) => ({ ...prev, isOpen: false }))}
+      >
+        {infoModal.content}
+      </InfoModal>
     </div>
   );
 };

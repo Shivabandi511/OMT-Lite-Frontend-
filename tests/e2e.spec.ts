@@ -9,11 +9,13 @@ async function loginAs(page, email, password) {
   expect(response.ok()).toBeTruthy();
   const data = await response.json();
 
-  await page.goto('/');
+  await page.goto('/mfa/login');
   await page.evaluate(({ token, user }) => {
     localStorage.setItem('omt_token', token);
     localStorage.setItem('omt_user', JSON.stringify(user));
   }, { token: data.token, user: data.user });
+
+  await page.goto('/dashboard');
 }
 
 test.describe('OMT Platform End-to-End Automation Suite', () => {

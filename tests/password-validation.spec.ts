@@ -90,8 +90,7 @@ test.describe('Password Validation & Vehicle Navigation Suite', () => {
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
 
-    await page.goto('/vehicles/1');
-    await page.evaluate(({ token, user }) => {
+    await page.context().addInitScript(({ token, user }) => {
       localStorage.setItem('omt_token', token);
       localStorage.setItem('omt_user', JSON.stringify(user));
     }, { token: data.token, user: data.user });
@@ -106,7 +105,7 @@ test.describe('Password Validation & Vehicle Navigation Suite', () => {
     await expect(backBtn).toBeVisible({ timeout: 10000 });
 
     // 2. Verify Breadcrumb link to VEHICLES
-    const breadcrumbVehiclesLink = page.locator('header a[href="/vehicles"]').first();
+    const breadcrumbVehiclesLink = page.locator('a[href="/vehicles"]').first();
     await expect(breadcrumbVehiclesLink).toBeVisible();
 
     // 3. Verify Parts Inventory Pagination is rendered

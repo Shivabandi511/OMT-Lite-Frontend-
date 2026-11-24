@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
 import { validatePassword, validatePasswordConfirmation } from '../utils/passwordValidator';
 import { PasswordRequirements } from '../components/auth/PasswordRequirements';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import {
   FiLogOut,
   FiEye,
@@ -14,7 +14,6 @@ import {
 
 export const Profile: React.FC = () => {
   const { user, logout, updateProfile, changePassword } = useAuth();
-  const navigate = useNavigate();
 
   // Profile info state
   const [fullName, setFullName] = useState(user?.name || 'Shiva Test');
@@ -38,6 +37,10 @@ export const Profile: React.FC = () => {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
+  // Logout state for instant visual feedback and confirmation popup on mobile & desktop
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   useEffect(() => {
     if (user?.name) {
       setFullName(user.name);
@@ -54,9 +57,16 @@ export const Profile: React.FC = () => {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/mfa/login', { replace: true });
+  const handlePerformLogout = () => {
+    setIsLoggingOut(true);
+    try {
+      logout();
+    } finally {
+      localStorage.removeItem('omt_token');
+      localStorage.removeItem('omt_user');
+      sessionStorage.clear();
+      window.location.replace('/mfa/login');
+    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -171,36 +181,45 @@ export const Profile: React.FC = () => {
           </p>
         </div>
 
-        {/* Sign Out Button matching screenshot */}
+        {/* Sign Out Button matching screenshot - opens confirmation modal */}
         <button
-          onClick={handleLogout}
+          type="button"
+          onClick={() => setShowLogoutModal(true)}
+          disabled={isLoggingOut}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            padding: '7px 16px',
-            backgroundColor: '#ffffff',
+            padding: '8px 18px',
+            backgroundColor: isLoggingOut ? '#fee2e2' : '#ffffff',
             border: '1.5px solid #f87171',
             borderRadius: 8,
             color: '#ef4444',
             fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
+            fontWeight: 700,
+            cursor: isLoggingOut ? 'wait' : 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'rgba(239, 68, 68, 0.2)',
             transition: 'all 0.15s ease',
-            boxShadow: '0 1px 2px rgba(239, 68, 68, 0.08)',
+            boxShadow: '0 1px 3px rgba(239, 68, 68, 0.12)',
+            opacity: isLoggingOut ? 0.75 : 1,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#fef2f2';
-            e.currentTarget.style.borderColor = '#dc2626';
-            e.currentTarget.style.color = '#dc2626';
+            if (!isLoggingOut) {
+              e.currentTarget.style.backgroundColor = '#fef2f2';
+              e.currentTarget.style.borderColor = '#dc2626';
+              e.currentTarget.style.color = '#dc2626';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-            e.currentTarget.style.borderColor = '#f87171';
-            e.currentTarget.style.color = '#ef4444';
+            if (!isLoggingOut) {
+              e.currentTarget.style.backgroundColor = '#ffffff';
+              e.currentTarget.style.borderColor = '#f87171';
+              e.currentTarget.style.color = '#ef4444';
+            }
           }}
         >
-          <FiLogOut size={14} />
+          <FiLogOut size={15} />
           <span>Sign out</span>
         </button>
       </div>
@@ -773,6 +792,37 @@ export const Profile: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Sign Out Confirmation Modal (Application-Level, replaces browser dialog) */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Sign Out of OMT Lite"
+        message={
+          <div>
+            <p style={{ margin: '0 0 10px 0', fontSize: 14 }}>
+              Are you sure you want to log out of your session on this device?
+            </p>
+            <div
+              style={{
+                fontSize: 12,
+                color: '#6b7280',
+                padding: '8px 12px',
+                backgroundColor: '#ffffff',
+                borderRadius: 6,
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              Active User: <strong>{user?.name || fullName}</strong> ({user?.email || email})
+            </div>
+          </div>
+        }
+        variant="danger"
+        confirmText="Sign Out"
+        cancelText="Stay Signed In"
+        isLoading={isLoggingOut}
+        onConfirm={handlePerformLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </div>
   );
 };

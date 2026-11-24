@@ -7,7 +7,7 @@ async function loginAs(page, email, password) {
   expect(response.ok()).toBeTruthy();
   const data = await response.json();
 
-  await page.goto('/');
+  await page.goto('/mfa/login');
   await page.evaluate(
     ({ token, user }) => {
       localStorage.setItem('omt_token', token);
@@ -15,6 +15,7 @@ async function loginAs(page, email, password) {
     },
     { token: data.token, user: data.user }
   );
+  await page.goto('/dashboard');
 }
 
 test.describe('Dashboard Greeting & QA Logout Protection Suite', () => {
@@ -47,9 +48,15 @@ test.describe('Dashboard Greeting & QA Logout Protection Suite', () => {
     await page.waitForSelector('text=Profile');
 
     // 1. Click Sign Out
-    const signoutBtn = page.locator('button:has-text("Sign out")').first();
+    const signoutBtn = page.locator('button:has-text("Sign out"), button:has-text("Sign Out")').first();
     await expect(signoutBtn).toBeVisible();
     await signoutBtn.click();
+
+    // If confirmation modal is open, confirm signout
+    const confirmBtn = page.locator('div[role="dialog"] button:has-text("Sign Out")');
+    if (await confirmBtn.isVisible()) {
+      await confirmBtn.click();
+    }
 
     // Verify smooth redirect to login/mfa/login
     await expect(page).toHaveURL(/.*mfa\/login|.*login/);

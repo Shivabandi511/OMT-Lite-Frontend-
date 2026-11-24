@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import vehicleService from '../services/vehicleService';
 import yardService from '../services/yardService';
@@ -41,6 +41,23 @@ export const VehicleList: React.FC = () => {
   useEffect(() => {
     yardService.getYards().then(setYards).catch(() => {});
   }, []);
+
+  // Track unfiltered total counts for status chips
+  const [allVehiclesTotal, setAllVehiclesTotal] = useState<Vehicle[]>([]);
+  useEffect(() => {
+    vehicleService.getVehicles({}).then(setAllVehiclesTotal).catch(() => {});
+  }, [vehicles.length]);
+
+  const statusCounts = useMemo(() => {
+    const list = allVehiclesTotal.length > 0 ? allVehiclesTotal : vehicles;
+    const counts = { ALL: list.length, RECEIVED: 0, IN_PROGRESS: 0, COMPLETED: 0 };
+    list.forEach((v) => {
+      if (v.status === 'RECEIVED') counts.RECEIVED++;
+      else if (v.status === 'IN_PROGRESS') counts.IN_PROGRESS++;
+      else if (v.status === 'COMPLETED') counts.COMPLETED++;
+    });
+    return counts;
+  }, [allVehiclesTotal, vehicles]);
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -216,7 +233,7 @@ export const VehicleList: React.FC = () => {
           </div>
 
           {/* Yard Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <Warehouse size={14} color="#8e8d9c" />
             <select
               value={yardFilter}
@@ -240,59 +257,115 @@ export const VehicleList: React.FC = () => {
             </select>
           </div>
 
-          {/* Routing Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Filter size={14} color="#8e8d9c" />
-            <select
-              value={routingFilter}
-              onChange={(e) => setRoutingFilter(e.target.value as RoutingDecision | '')}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 8,
-                border: '1px solid var(--omt-color-border)',
-                fontSize: 13,
-                outline: 'none',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="">All Routing</option>
-              <option value="DISMANTLE">Dismantle</option>
-              <option value="KEEP_WHOLE">Keep Whole</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as VehicleStatus | '')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid var(--omt-color-border)',
-              fontSize: 13,
-              outline: 'none',
-              backgroundColor: '#ffffff',
-              cursor: 'pointer',
-            }}
-          >
-            <option value="">All Statuses</option>
-            <option value="RECEIVED">Received</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-
           {(searchTerm || yardFilter || routingFilter || statusFilter) && (
             <button
               onClick={resetFilters}
               className="btn-secondary"
-              style={{ padding: '8px 12px', fontSize: 12 }}
+              style={{ padding: '8px 12px', fontSize: 12, marginLeft: 'auto' }}
               title="Reset all filters"
             >
               <RotateCcw size={13} />
               <span>Reset</span>
             </button>
           )}
+        </div>
+
+        {/* Status & Routing Filter Bar: Sleek segmented pills (replaces clunky dropdowns that covered content) */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            paddingTop: 10,
+            borderTop: '1px solid #f1eff8',
+          }}
+        >
+          {/* Status Filter Segmented Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 4 }}>
+              Status:
+            </span>
+            {[
+              { id: '', label: 'All Statuses', count: statusCounts.ALL },
+              { id: 'RECEIVED', label: 'Received', count: statusCounts.RECEIVED },
+              { id: 'IN_PROGRESS', label: 'In Progress', count: statusCounts.IN_PROGRESS },
+              { id: 'COMPLETED', label: 'Completed', count: statusCounts.COMPLETED },
+            ].map((tab) => {
+              const active = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.id as VehicleStatus | '')}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 500,
+                    border: active ? '1.5px solid var(--omt-color-primary, #7c3aed)' : '1px solid #e2e0ed',
+                    backgroundColor: active ? '#f3e8ff' : '#ffffff',
+                    color: active ? '#6b21a8' : '#4b5563',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      padding: '1px 5px',
+                      borderRadius: 10,
+                      backgroundColor: active ? '#7c3aed' : '#f3f4f6',
+                      color: active ? '#ffffff' : '#6b7280',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Routing Filter Segmented Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Filter size={13} color="#8e8d9c" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 2 }}>
+              Routing:
+            </span>
+            {[
+              { id: '', label: 'All Routing' },
+              { id: 'DISMANTLE', label: 'Dismantle' },
+              { id: 'KEEP_WHOLE', label: 'Keep Whole' },
+            ].map((routeTab) => {
+              const active = routingFilter === routeTab.id;
+              return (
+                <button
+                  key={routeTab.id}
+                  type="button"
+                  onClick={() => setRoutingFilter(routeTab.id as RoutingDecision | '')}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    fontSize: 11.5,
+                    fontWeight: active ? 700 : 500,
+                    border: active ? '1.5px solid #a855f7' : '1px solid #e2e0ed',
+                    backgroundColor: active ? '#faf5ff' : '#ffffff',
+                    color: active ? '#7e22ce' : '#6b7280',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {routeTab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import api from '../services/api';
 import type { Yard, Vehicle } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import {
   RiArrowLeftLine,
   RiBuilding2Line,
@@ -41,6 +42,17 @@ export const YardDetail: React.FC = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    newStatus: 'ACTIVE' | 'INACTIVE';
+    title: string;
+    message: React.ReactNode;
+  }>({
+    isOpen: false,
+    newStatus: 'ACTIVE',
+    title: '',
+    message: null,
+  });
 
   const fetchYardAndVehicles = async () => {
     try {
@@ -113,12 +125,34 @@ export const YardDetail: React.FC = () => {
       return;
     }
 
-    const confirmPrompt =
-      newStatus === 'INACTIVE'
-        ? `Are you sure you want to deactivate ${yard.name}? Inactive yards cannot be selected for new vehicles.`
-        : `Reactivate yard ${yard.name}?`;
+    setConfirmModal({
+      isOpen: true,
+      newStatus,
+      title: newStatus === 'INACTIVE' ? 'Deactivate Storage Yard' : 'Reactivate Storage Yard',
+      message: (
+        <div>
+          <p style={{ margin: '0 0 10px 0', fontSize: 14 }}>
+            {newStatus === 'INACTIVE' ? (
+              <>
+                Are you sure you want to deactivate <strong>{yard.name}</strong>? Inactive yards cannot be selected when registering new vehicles.
+              </>
+            ) : (
+              <>
+                Reactivate storage yard <strong>{yard.name}</strong> to make it available for vehicle storage and intake operations?
+              </>
+            )}
+          </p>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>
+            Yard Code: <strong>{yard.yardCode}</strong> • Location: <strong>{yard.city}, {yard.country}</strong>
+          </div>
+        </div>
+      ),
+    });
+  };
 
-    if (!window.confirm(confirmPrompt)) return;
+  const handleExecuteStatusToggle = async () => {
+    if (!yard) return;
+    const newStatus = confirmModal.newStatus;
 
     try {
       setError(null);
@@ -128,9 +162,11 @@ export const YardDetail: React.FC = () => {
       setSuccessMsg(
         `Yard successfully ${newStatus === 'ACTIVE' ? 'reactivated' : 'deactivated'}.`
       );
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to change yard status');
+      setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     }
   };
 
@@ -738,6 +774,16 @@ export const YardDetail: React.FC = () => {
           </table>
         </div>
       </div>
+      {/* In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.newStatus === 'INACTIVE' ? 'warning' : 'primary'}
+        confirmText={confirmModal.newStatus === 'INACTIVE' ? 'Deactivate Yard' : 'Reactivate Yard'}
+        onConfirm={handleExecuteStatusToggle}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

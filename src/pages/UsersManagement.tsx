@@ -3,6 +3,7 @@ import api from '../services/api';
 import type { User, UserCreatePayload } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordValidator';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import {
   Users,
   UserPlus,
@@ -27,6 +28,21 @@ export const UsersManagement: React.FC = () => {
 
   // Add User Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    confirmText: string;
+    variant: 'primary' | 'warning' | 'danger';
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: null,
+    confirmText: 'Confirm',
+    variant: 'primary',
+    onConfirm: async () => {},
+  });
   const [formData, setFormData] = useState<UserCreatePayload>({
     name: '',
     email: '',
@@ -96,49 +112,71 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
-  const handleToggleOperations = async (targetUser: User) => {
+  const handleToggleOperations = (targetUser: User) => {
     const updatedValue = !targetUser.canMakeOperations;
     const confirmMsg = updatedValue
       ? `Grant full operational access to ${targetUser.name}? They will be able to register and update vehicles.`
       : `Restrict ${targetUser.name} to Read-Only access? They will no longer be able to create or edit vehicles.`;
 
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-      setError(null);
-      await api.put(`/users/${targetUser.id}/permissions`, {
-        canMakeOperations: updatedValue,
-      });
-      setSuccessMsg(
-        `Permissions updated: ${targetUser.name} is now ${
-          updatedValue ? 'granted Full Operations' : 'restricted to Read-Only'
-        }.`
-      );
-      fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user permissions.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: updatedValue ? 'Grant Operational Permissions' : 'Restrict to Read-Only',
+      message: confirmMsg,
+      variant: updatedValue ? 'primary' : 'warning',
+      confirmText: updatedValue ? 'Grant Access' : 'Restrict Access',
+      onConfirm: async () => {
+        try {
+          setError(null);
+          await api.put(`/users/${targetUser.id}/permissions`, {
+            canMakeOperations: updatedValue,
+          });
+          setSuccessMsg(
+            `Permissions updated: ${targetUser.name} is now ${
+              updatedValue ? 'granted Full Operations' : 'restricted to Read-Only'
+            }.`
+          );
+          fetchUsers();
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Failed to update user permissions.');
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
-  const handleToggleActive = async (targetUser: User) => {
+  const handleToggleActive = (targetUser: User) => {
     if (targetUser.id === currentUser?.id) {
-      alert('You cannot deactivate your own Tenant Administrator account.');
+      setError('You cannot deactivate your own Tenant Administrator account.');
       return;
     }
 
     const updatedValue = !targetUser.active;
-    if (!window.confirm(`${updatedValue ? 'Activate' : 'Deactivate'} ${targetUser.name}'s account?`)) return;
-
-    try {
-      setError(null);
-      await api.put(`/users/${targetUser.id}/permissions`, {
-        active: updatedValue,
-      });
-      setSuccessMsg(`Account status updated for ${targetUser.name}.`);
-      fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to toggle account status.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: updatedValue ? 'Activate User Account' : 'Deactivate User Account',
+      message: `${updatedValue ? 'Activate' : 'Deactivate'} account for ${targetUser.name}? ${
+        updatedValue
+          ? 'They will be permitted to log in and access system resources.'
+          : 'They will be immediately blocked from signing in.'
+      }`,
+      variant: updatedValue ? 'primary' : 'danger',
+      confirmText: updatedValue ? 'Activate Account' : 'Deactivate Account',
+      onConfirm: async () => {
+        try {
+          setError(null);
+          await api.put(`/users/${targetUser.id}/permissions`, {
+            active: updatedValue,
+          });
+          setSuccessMsg(`Account status updated for ${targetUser.name}.`);
+          fetchUsers();
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Failed to toggle account status.');
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -640,6 +678,16 @@ export const UsersManagement: React.FC = () => {
           </div>
         </div>
       )}
+      {/* In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

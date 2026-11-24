@@ -18,6 +18,19 @@ import { VehicleDetail } from './pages/VehicleDetail';
 import { UsersManagement } from './pages/UsersManagement';
 import { Profile } from './pages/Profile';
 import { NotFound } from './pages/NotFound';
+import { useAuth } from './context/AuthContext';
+
+const LogoutRedirect: React.FC = () => {
+  const { logout } = useAuth();
+  React.useEffect(() => {
+    logout();
+    localStorage.removeItem('omt_token');
+    localStorage.removeItem('omt_user');
+    sessionStorage.clear();
+    window.location.replace('/mfa/login');
+  }, [logout]);
+  return null;
+};
 
 export const App: React.FC = () => {
   return (
@@ -26,6 +39,8 @@ export const App: React.FC = () => {
         <Routes>
           {/* Public Auth Routes matching OMT Platform */}
           <Route path="/login" element={<Navigate to="/mfa/login" replace />} />
+          <Route path="/logout" element={<LogoutRedirect />} />
+          <Route path="/profile/logout" element={<LogoutRedirect />} />
           <Route path="/register" element={<Register />} />
           <Route path="/mfa/login" element={<MfaLogin />} />
           <Route path="/mfa/verify" element={<MfaVerify />} />
