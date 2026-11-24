@@ -314,7 +314,8 @@ export const YardList: React.FC = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
         }}
       >
-        <div style={{ overflowX: 'auto' }}>
+        {/* Desktop Table View */}
+        <div className="table-desktop-view" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
             <thead>
               <tr
@@ -472,6 +473,99 @@ export const YardList: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View (Cards on mobile view instead of horizontal table) */}
+        <div className="cards-mobile-view" style={{ padding: '8px' }}>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '36px 12px', color: '#8e8d9c' }}>
+              <OmtLogoLoader text="Loading yards..." size="sm" />
+            </div>
+          ) : yards.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 12px', color: '#8e8d9c' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                No yards found
+              </div>
+              <div style={{ fontSize: 12 }}>Try adjusting your search terms or filters.</div>
+            </div>
+          ) : (
+            yards
+              .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+              .map((yard) => (
+                <div key={yard.id} className="omt-mobile-card">
+                  {/* Top Header: Code & Status */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span className="omt-code-pill">{yard.yardCode}</span>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '3px 8px',
+                        borderRadius: 12,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        backgroundColor: yard.status === 'ACTIVE' ? '#ecfdf5' : '#f3f4f6',
+                        color: yard.status === 'ACTIVE' ? '#047857' : '#6b7280',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: yard.status === 'ACTIVE' ? '#10b981' : '#9ca3af',
+                        }}
+                      />
+                      {yard.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  {/* Name & Address */}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--omt-color-text-main)', marginBottom: 2 }}>
+                    {yard.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                    {yard.address}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#8e8d9c', marginBottom: 10 }}>
+                    📍 {yard.city}, {yard.country}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      gap: 8,
+                      borderTop: '1px solid #f3f4f6',
+                      paddingTop: 8,
+                    }}
+                  >
+                    <Link
+                      to={`/yards/${yard.id}`}
+                      className="btn-secondary"
+                      style={{ padding: '6px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      title="View Yard Details"
+                    >
+                      <RiEyeLine size={14} />
+                      <span>Details</span>
+                    </Link>
+
+                    <Link
+                      to={`/yards/${yard.id}?edit=true`}
+                      className="btn-secondary"
+                      style={{ padding: '6px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      title="Edit Yard"
+                    >
+                      <RiEditLine size={14} />
+                      <span>Edit</span>
+                    </Link>
+                  </div>
+                </div>
+              ))
+          )}
         </div>
 
         {/* Dynamic Pagination matching Screenshot 3.2 */}

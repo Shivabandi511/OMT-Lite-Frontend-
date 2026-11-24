@@ -298,126 +298,222 @@ export const VehicleList: React.FC = () => {
 
       {error && <ErrorBanner message={error} onRetry={fetchVehicles} />}
 
-      {/* Vehicles Table */}
-      <div className="omt-table-wrapper">
-        <table className="omt-table">
-          <thead>
-            <tr>
-              <th>Asset Code</th>
-              <th>VIN</th>
-              <th>Make &amp; Model</th>
-              <th>Yard Location</th>
-              <th>Routing</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
+      {/* Vehicles Table & Mobile Cards */}
+      <div className="omt-table-wrapper" style={{ overflow: 'visible' }}>
+        {/* Desktop Table View */}
+        <div className="table-desktop-view">
+          <table className="omt-table">
+            <thead>
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#8e8d9c' }}>
-                  Loading vehicle assets...
-                </td>
+                <th>Asset Code</th>
+                <th>VIN</th>
+                <th>Make &amp; Model</th>
+                <th>Yard Location</th>
+                <th>Routing</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            ) : vehicles.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: '24px 0' }}>
-                  <EmptyState
-                    icon={Car}
-                    title="No vehicles found"
-                    description={
-                      searchTerm || yardFilter || routingFilter || statusFilter
-                        ? 'No vehicles match your active search and filter criteria. Try clearing filters.'
-                        : 'No vehicle assets registered yet.'
-                    }
-                    actionText={searchTerm || yardFilter || routingFilter || statusFilter ? 'Reset Filters' : undefined}
-                    onAction={searchTerm || yardFilter || routingFilter || statusFilter ? resetFilters : undefined}
-                  />
-                </td>
-              </tr>
-            ) : (
-              vehicles
-                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                .map((v) => (
-                <tr key={v.id}>
-                  <td>
-                    <Link
-                      to={`/vehicles/${v.id}`}
-                      style={{
-                        fontFamily: 'var(--omt-font-mono)',
-                        fontWeight: 700,
-                        fontSize: 12,
-                        color: 'var(--omt-color-primary)',
-                        backgroundColor: '#efe7ff',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                        textDecoration: 'none',
-                        display: 'inline-block',
-                      }}
-                    >
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#8e8d9c' }}>
+                    Loading vehicle assets...
+                  </td>
+                </tr>
+              ) : vehicles.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '24px 0' }}>
+                    <EmptyState
+                      icon={Car}
+                      title="No vehicles found"
+                      description={
+                        searchTerm || yardFilter || routingFilter || statusFilter
+                          ? 'No vehicles match your active search and filter criteria. Try clearing filters.'
+                          : 'No vehicle assets registered yet.'
+                      }
+                      actionText={searchTerm || yardFilter || routingFilter || statusFilter ? 'Reset Filters' : undefined}
+                      onAction={searchTerm || yardFilter || routingFilter || statusFilter ? resetFilters : undefined}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                vehicles
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      <Link
+                        to={`/vehicles/${v.id}`}
+                        style={{
+                          fontFamily: 'var(--omt-font-mono)',
+                          fontWeight: 700,
+                          fontSize: 12,
+                          color: 'var(--omt-color-primary)',
+                          backgroundColor: '#efe7ff',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          textDecoration: 'none',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {v.assetCode}
+                      </Link>
+                    </td>
+                    <td>
+                      <span style={{ fontFamily: 'var(--omt-font-mono)', fontSize: 12, fontWeight: 600 }}>
+                        {v.vin}
+                      </span>
+                    </td>
+                    <td>
+                      <Link
+                        to={`/vehicles/${v.id}`}
+                        style={{
+                          fontWeight: 700,
+                          color: 'var(--omt-color-text-main)',
+                          textDecoration: 'none',
+                          display: 'block',
+                        }}
+                      >
+                        {v.make} {v.model}
+                      </Link>
+                      <div style={{ fontSize: 11, color: '#8e8d9c' }}>Year {v.manufactureYear}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--omt-color-text-main)' }}>
+                        {v.yardName}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#8e8d9c' }}>{v.yardCode}</div>
+                    </td>
+                    <td>
+                      <StatusBadge status={v.routingDecision} size="sm" />
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <StatusBadge status={v.status} size="sm" />
+                        {v.status === 'COMPLETED' && (
+                          <span
+                            title="Completed vehicles are read-only"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              color: '#059669',
+                            }}
+                          >
+                            <Lock size={12} />
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <Link
+                        to={`/vehicles/${v.id}`}
+                        className="btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: 12 }}
+                      >
+                        <Eye size={13} />
+                        <span>Details</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View (Cards on mobile view instead of horizontal overflow table) */}
+        <div className="cards-mobile-view" style={{ padding: '4px 0 12px' }}>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '36px 12px', color: '#8e8d9c' }}>
+              Loading vehicle assets...
+            </div>
+          ) : vehicles.length === 0 ? (
+            <EmptyState
+              icon={Car}
+              title="No vehicles found"
+              description={
+                searchTerm || yardFilter || routingFilter || statusFilter
+                  ? 'No vehicles match your active search and filter criteria.'
+                  : 'No vehicle assets registered yet.'
+              }
+              actionText={searchTerm || yardFilter || routingFilter || statusFilter ? 'Reset Filters' : undefined}
+              onAction={searchTerm || yardFilter || routingFilter || statusFilter ? resetFilters : undefined}
+            />
+          ) : (
+            vehicles
+              .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+              .map((v) => (
+                <div key={v.id} className="omt-mobile-card">
+                  {/* Top Header: Code & Status */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+                    <Link to={`/vehicles/${v.id}`} className="omt-code-pill">
                       {v.assetCode}
                     </Link>
-                  </td>
-                  <td>
-                    <span style={{ fontFamily: 'var(--omt-font-mono)', fontSize: 12, fontWeight: 600 }}>
-                      {v.vin}
-                    </span>
-                  </td>
-                  <td>
-                    <Link
-                      to={`/vehicles/${v.id}`}
-                      style={{
-                        fontWeight: 700,
-                        color: 'var(--omt-color-text-main)',
-                        textDecoration: 'none',
-                        display: 'block',
-                      }}
-                    >
-                      {v.make} {v.model}
-                    </Link>
-                    <div style={{ fontSize: 11, color: '#8e8d9c' }}>Year {v.manufactureYear}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--omt-color-text-main)' }}>
-                      {v.yardName}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#8e8d9c' }}>{v.yardCode}</div>
-                  </td>
-                  <td>
-                    <StatusBadge status={v.routingDecision} size="sm" />
-                  </td>
-                  <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <StatusBadge status={v.status} size="sm" />
                       {v.status === 'COMPLETED' && (
-                        <span
-                          title="Completed vehicles are read-only"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            color: '#059669',
-                          }}
-                        >
+                        <span title="Completed (Read-Only)" style={{ color: '#059669', display: 'flex' }}>
                           <Lock size={12} />
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <Link
-                      to={`/vehicles/${v.id}`}
-                      className="btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: 12 }}
-                    >
-                      <Eye size={13} />
-                      <span>Details</span>
-                    </Link>
-                  </td>
-                </tr>
+                  </div>
+
+                  {/* Title & Year */}
+                  <Link
+                    to={`/vehicles/${v.id}`}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: 'var(--omt-color-text-main)',
+                      textDecoration: 'none',
+                      marginBottom: 2,
+                    }}
+                  >
+                    {v.make} {v.model}
+                  </Link>
+                  <div style={{ fontSize: 11, color: '#8e8d9c', marginBottom: 10 }}>Year {v.manufactureYear}</div>
+
+                  {/* Grid details */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ color: '#8e8d9c', fontSize: 10, textTransform: 'uppercase', fontWeight: 700 }}>VIN</div>
+                      <div style={{ fontFamily: 'var(--omt-font-mono)', fontWeight: 600, color: 'var(--omt-color-text-main)', wordBreak: 'break-all' }}>
+                        {v.vin}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#8e8d9c', fontSize: 10, textTransform: 'uppercase', fontWeight: 700 }}>Routing</div>
+                      <StatusBadge status={v.routingDecision} size="sm" />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ color: '#8e8d9c', fontSize: 10, textTransform: 'uppercase', fontWeight: 700 }}>Yard Location</div>
+                      <div style={{ fontWeight: 600, color: 'var(--omt-color-text-main)' }}>
+                        {v.yardName} <span style={{ color: '#8e8d9c', fontSize: 10 }}>({v.yardCode})</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action button */}
+                  <Link
+                    to={`/vehicles/${v.id}`}
+                    className="btn-secondary"
+                    style={{
+                      padding: '8px 12px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <Eye size={13} />
+                    <span>View Details</span>
+                  </Link>
+                </div>
               ))
-            )}
-          </tbody>
-        </table>
+          )}
+        </div>
 
         {/* Dynamic Pagination */}
         <Pagination

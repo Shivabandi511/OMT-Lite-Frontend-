@@ -101,7 +101,7 @@ test.describe('OMT Platform End-to-End Automation Suite', () => {
 
     // Verify success banner and yard appears in table
     await expect(page.locator('text=Yard successfully created')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(`text=${uniqueYardName}`)).toBeVisible();
+    await expect(page.locator(`text=${uniqueYardName}`).first()).toBeVisible();
 
     // Now visit an existing yard to test Deactivation restriction for Staff
     await page.goto('/yards/1');

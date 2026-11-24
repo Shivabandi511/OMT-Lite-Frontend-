@@ -14,7 +14,6 @@ import {
 } from 'react-icons/ri';
 import {
   FiArrowRight,
-  FiRefreshCw,
   FiEye,
   FiAlertCircle,
 } from 'react-icons/fi';
@@ -82,6 +81,14 @@ export const Dashboard: React.FC = () => {
   const readyDash = totalVehicles > 0 ? (receivedCount / totalVehicles) * circumference : 0;
   const readyOffset = -(completedDash + inProgressDash);
 
+  // Real-time dynamic greeting based on current local hour
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Top Welcome Title */}
@@ -96,22 +103,12 @@ export const Dashboard: React.FC = () => {
               color: 'var(--omt-color-text-main)',
             }}
           >
-            Good morning, {firstName}.
+            {getGreeting()}, {firstName}.
           </h1>
           <p style={{ fontSize: 12, color: 'var(--omt-color-text-muted)', marginTop: 2 }}>
             Real-time yard inventory and vehicle processing lifecycle
           </p>
         </div>
-
-        <button
-          onClick={fetchDashboardData}
-          className="btn-secondary"
-          style={{ padding: '6px 14px', fontSize: 12 }}
-          title="Refresh dashboard data"
-        >
-          <FiRefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-          <span>Refresh</span>
-        </button>
       </div>
 
       {error && <ErrorBanner message={error} onRetry={fetchDashboardData} />}
@@ -563,8 +560,8 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Vehicles Table */}
-        <div style={{ overflowX: 'auto' }}>
+        {/* Vehicles Table (Desktop Table View) */}
+        <div className="table-desktop-view" style={{ overflowX: 'auto' }}>
           <table className="omt-table" style={{ width: '100%' }}>
             <thead>
               <tr>
@@ -642,6 +639,66 @@ export const Dashboard: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Vehicles Cards (Mobile Card View instead of horizontal table) */}
+        <div className="cards-mobile-view" style={{ padding: '4px 0' }}>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: '#8e8d9c' }}>
+              Loading vehicle inventory...
+            </div>
+          ) : recentVehicles.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: '#8e8d9c' }}>
+              No vehicle assets registered yet.
+            </div>
+          ) : (
+            recentVehicles.map((vehicle) => (
+              <div key={vehicle.id} className="omt-mobile-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Link to={`/vehicles/${vehicle.id}`} className="omt-code-pill">
+                    {vehicle.assetCode}
+                  </Link>
+                  <StatusBadge status={vehicle.status} size="sm" />
+                </div>
+
+                <Link
+                  to={`/vehicles/${vehicle.id}`}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--omt-color-text-main)',
+                    textDecoration: 'none',
+                    marginBottom: 2,
+                  }}
+                >
+                  {vehicle.manufactureYear} {vehicle.make} {vehicle.model}
+                </Link>
+                <div style={{ fontSize: 11, color: '#8e8d9c', marginBottom: 8 }}>
+                  {vehicle.yardName}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, marginBottom: 10 }}>
+                  <div>
+                    <span style={{ color: '#8e8d9c' }}>VIN: </span>
+                    <span style={{ fontFamily: 'var(--omt-font-mono)', fontWeight: 600 }}>{vehicle.vin}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#8e8d9c' }}>Routing: </span>
+                    <StatusBadge status={vehicle.routingDecision} size="sm" />
+                  </div>
+                </div>
+
+                <Link
+                  to={`/vehicles/${vehicle.id}`}
+                  className="btn-secondary"
+                  style={{ width: '100%', justifyContent: 'center', padding: '7px 12px', fontSize: 12 }}
+                >
+                  <FiEye size={12} />
+                  <span>View Parts & Details</span>
+                </Link>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

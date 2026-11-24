@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import vehicleService from '../services/vehicleService';
 import yardService from '../services/yardService';
 import type { Vehicle, Yard, VehicleStatus, RoutingDecision, Part } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
 import { ErrorBanner } from '../components/common/ErrorBanner';
+import { Pagination } from '../components/common/Pagination';
 import {
   Car,
   CheckCircle2,
@@ -23,18 +24,27 @@ import {
   Check,
   MapPin,
   FileText,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const VehicleDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { canMakeOperations } = useAuth();
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [yards, setYards] = useState<Yard[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
+  const [allVehicleList, setAllVehicleList] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Pagination state for parts
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
 
   // Vehicle Edit modal/form state
   const [isEditing, setIsEditing] = useState(false);
@@ -85,15 +95,17 @@ export const VehicleDetail: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      const [vData, yData, pData] = await Promise.all([
+      const [vData, yData, pData, allVehicles] = await Promise.all([
         vehicleService.getVehicleById(id),
         yardService.getYards(),
         vehicleService.getParts(id),
+        vehicleService.getVehicles(),
       ]);
 
       setVehicle(vData);
       setYards(yData);
       setParts(pData);
+      setAllVehicleList(allVehicles);
 
       setFormData({
         make: vData.make,
@@ -292,6 +304,30 @@ export const VehicleDetail: React.FC = () => {
     });
   }, [parts, searchQuery, extractionFilter, statusFilter, categoryFilter]);
 
+  // Previous / Next Vehicle navigation
+  const { prevVehicle, nextVehicle } = useMemo(() => {
+    if (!allVehicleList || allVehicleList.length === 0 || !id) {
+      return { prevVehicle: null, nextVehicle: null };
+    }
+    const currentIndex = allVehicleList.findIndex((v) => String(v.id) === String(id));
+    if (currentIndex === -1) return { prevVehicle: null, nextVehicle: null };
+    return {
+      prevVehicle: currentIndex > 0 ? allVehicleList[currentIndex - 1] : null,
+      nextVehicle: currentIndex < allVehicleList.length - 1 ? allVehicleList[currentIndex + 1] : null,
+    };
+  }, [allVehicleList, id]);
+
+  // Reset parts pagination on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, extractionFilter, statusFilter, categoryFilter]);
+
+  // Paginated parts
+  const paginatedParts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredParts.slice(start, start + pageSize);
+  }, [filteredParts, currentPage, pageSize]);
+
   // Metrics computation
   const metrics = useMemo(() => {
     const total = parts.length;
@@ -342,45 +378,129 @@ export const VehicleDetail: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 1300, margin: '0 auto' }}>
-      {/* Top Breadcrumb Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}>
+      {/* Top Breadcrumb & Navigation Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {/* Back to Vehicles Button */}
           <Link
             to="/vehicles"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              color: 'var(--omt-color-primary)',
-              textDecoration: 'none',
-              letterSpacing: '0.04em',
-            }}
-          >
-            <span>ASSETS</span>
-          </Link>
-          <span style={{ color: '#c4b5fd' }}>&gt;</span>
-          <span style={{ color: '#6b7280' }}>{vehicle.assetCode}</span>
-        </div>
-
-        {vehicle.readOnly && (
-          <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              backgroundColor: '#ecfdf5',
-              color: '#065f46',
-              padding: '4px 12px',
-              borderRadius: 20,
-              border: '1px solid #a7f3d0',
+              padding: '6px 12px',
+              borderRadius: 8,
+              backgroundColor: 'var(--omt-color-surface, #ffffff)',
+              border: '1px solid var(--omt-color-border, #e5e7eb)',
+              color: 'var(--omt-color-text-main, #374151)',
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Lock size={12} />
-            <span>Read-Only Completed Asset</span>
-          </span>
-        )}
+            <ArrowLeft size={15} />
+            <span>Back to Vehicles</span>
+          </Link>
+
+          {/* Breadcrumb path */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}>
+            <Link
+              to="/vehicles"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                color: 'var(--omt-color-primary, #8633f3)',
+                textDecoration: 'none',
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span>VEHICLES</span>
+            </Link>
+            <span style={{ color: '#c4b5fd' }}>&gt;</span>
+            <span style={{ color: '#6b7280' }}>{vehicle.assetCode}</span>
+          </div>
+        </div>
+
+        {/* Right side: Prev/Next Asset navigation & Read-Only badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {prevVehicle && (
+            <button
+              onClick={() => navigate(`/vehicles/${prevVehicle.id}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--omt-color-border, #e5e7eb)',
+                backgroundColor: 'var(--omt-color-surface, #ffffff)',
+                color: 'var(--omt-color-text-main, #374151)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              title={`Go to previous vehicle: ${prevVehicle.assetCode}`}
+            >
+              <ChevronLeft size={14} />
+              <span>Prev ({prevVehicle.assetCode})</span>
+            </button>
+          )}
+
+          {nextVehicle && (
+            <button
+              onClick={() => navigate(`/vehicles/${nextVehicle.id}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--omt-color-border, #e5e7eb)',
+                backgroundColor: 'var(--omt-color-surface, #ffffff)',
+                color: 'var(--omt-color-text-main, #374151)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              title={`Go to next vehicle: ${nextVehicle.assetCode}`}
+            >
+              <span>Next ({nextVehicle.assetCode})</span>
+              <ChevronRight size={14} />
+            </button>
+          )}
+
+          {vehicle.readOnly && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 700,
+                backgroundColor: '#ecfdf5',
+                color: '#065f46',
+                padding: '4px 12px',
+                borderRadius: 20,
+                border: '1px solid #a7f3d0',
+              }}
+            >
+              <Lock size={12} />
+              <span>Read-Only Completed Asset</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Main Vehicle Header Banner */}
@@ -1057,7 +1177,7 @@ export const VehicleDetail: React.FC = () => {
             </p>
           </div>
         ) : (
-          filteredParts.map((part) => {
+          paginatedParts.map((part) => {
             const isDropdownOpen = openDropdownPartId === part.id;
             const isStatusDropdownOpen = openStatusDropdownPartId === part.id;
             const isSelected = selectedPartIds.includes(part.id);
@@ -1381,6 +1501,30 @@ export const VehicleDetail: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Parts Pagination Navigation */}
+      {filteredParts.length > 0 && (
+        <div
+          style={{
+            marginTop: 16,
+            borderRadius: 12,
+            overflow: 'hidden',
+            border: '1px solid var(--omt-color-border, #ebe8f3)',
+          }}
+        >
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredParts.length}
+            pageSize={pageSize}
+            pageSizeOptions={[6, 12, 18, 36]}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+      )}
 
       {/* Add Part Modal */}
       {showAddPartModal && (

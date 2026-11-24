@@ -6,6 +6,7 @@ import { AppLayout } from './components/layout/AppLayout';
 
 import { MfaLogin } from './pages/MfaLogin';
 import { MfaVerify } from './pages/MfaVerify';
+import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Dashboard } from './pages/Dashboard';
 import { YardList } from './pages/YardList';
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
         <Routes>
           {/* Public Auth Routes matching OMT Platform */}
           <Route path="/login" element={<Navigate to="/mfa/login" replace />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/mfa/login" element={<MfaLogin />} />
           <Route path="/mfa/verify" element={<MfaVerify />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

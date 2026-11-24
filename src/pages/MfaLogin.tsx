@@ -155,6 +155,13 @@ export const MfaLogin: React.FC = () => {
             )}
           </button>
         </form>
+
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#656375' }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: '#8633f3', fontWeight: 700, textDecoration: 'none' }}>
+            Register here
+          </Link>
+        </div>
       </div>
     </AuthSplitLayout>
   );

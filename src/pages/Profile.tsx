@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { OmtLogoLoader } from '../components/common/OmtLogoLoader';
+import { validatePassword, validatePasswordConfirmation } from '../utils/passwordValidator';
+import { PasswordRequirements } from '../components/auth/PasswordRequirements';
 import {
   FiLogOut,
   FiEye,
@@ -54,7 +56,7 @@ export const Profile: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/mfa/login', { replace: true });
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -88,23 +90,15 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters long.');
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      setPasswordError(validation.error || 'Password does not meet complexity requirements.');
       return;
     }
 
-    const hasUpper = /[A-Z]/.test(newPassword);
-    const hasLower = /[a-z]/.test(newPassword);
-    const hasNum = /[0-9]/.test(newPassword);
-    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
-
-    if (!hasUpper || !hasLower || !hasNum || !hasSpecial) {
-      setPasswordError('Password must contain uppercase, lowercase, number, and special character.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirmation do not match.');
+    const confirmCheck = validatePasswordConfirmation(newPassword, confirmPassword);
+    if (!confirmCheck.isValid) {
+      setPasswordError(confirmCheck.error || 'Confirm Password must match Password.');
       return;
     }
 
@@ -675,6 +669,7 @@ export const Profile: React.FC = () => {
                   {showNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
+              <PasswordRequirements password={newPassword} />
             </div>
 
             {/* Confirm New Password */}

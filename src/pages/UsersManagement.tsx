@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import type { User, UserCreatePayload } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { validatePassword } from '../utils/passwordValidator';
 import {
   Users,
   UserPlus,
@@ -58,6 +59,14 @@ export const UsersManagement: React.FC = () => {
     if (!formData.name.trim() || !formData.email.trim()) {
       setError('Name and Email are required.');
       return;
+    }
+
+    if (formData.password && formData.password.trim()) {
+      const passValidation = validatePassword(formData.password);
+      if (!passValidation.isValid) {
+        setError(passValidation.error || 'Password does not meet complexity standards.');
+        return;
+      }
     }
 
     try {

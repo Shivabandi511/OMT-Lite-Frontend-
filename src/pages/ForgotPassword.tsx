@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthSplitLayout } from '../components/auth/AuthSplitLayout';
 import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { validatePassword, validatePasswordConfirmation } from '../utils/passwordValidator';
+import { PasswordRequirements } from '../components/auth/PasswordRequirements';
 
 export const ForgotPassword: React.FC = () => {
   const { sendForgotPasswordOtp, resetPasswordWithOtp } = useAuth();
@@ -14,6 +16,7 @@ export const ForgotPassword: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -68,13 +71,15 @@ export const ForgotPassword: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      setError(validation.error || 'Password does not meet complexity requirements.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setError('New password and confirm password do not match.');
+    const confirmCheck = validatePasswordConfirmation(newPassword, confirmPassword);
+    if (!confirmCheck.isValid) {
+      setError(confirmCheck.error || 'New password and confirm password do not match.');
       return;
     }
 
@@ -353,10 +358,10 @@ export const ForgotPassword: React.FC = () => {
                     id="reset-new-password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     style={{
                       width: '100%',
                       padding: '10px 40px 10px 14px',
@@ -383,6 +388,7 @@ export const ForgotPassword: React.FC = () => {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <PasswordRequirements password={newPassword} />
               </div>
 
               {/* Confirm Password */}
@@ -401,22 +407,41 @@ export const ForgotPassword: React.FC = () => {
                 >
                   CONFIRM PASSWORD
                 </label>
-                <input
-                  id="reset-confirm-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat new password"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    border: '1px solid #dcd9e8',
-                    fontSize: 13,
-                    outline: 'none',
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="reset-confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    style={{
+                      width: '100%',
+                      padding: '10px 40px 10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid #dcd9e8',
+                      fontSize: 13,
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#8e8d9c',
+                    }}
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <button

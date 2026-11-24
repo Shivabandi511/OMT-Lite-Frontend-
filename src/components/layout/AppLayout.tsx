@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { OmtLogoLoader } from '../common/OmtLogoLoader';
 import {
@@ -16,13 +16,19 @@ import {
   FiSun,
   FiMenu,
   FiX,
+  FiLogOut,
 } from 'react-icons/fi';
 
 export const AppLayout: React.FC = () => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/mfa/login', { replace: true });
+  };
 
   // Theme state persisted in localStorage
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -433,6 +439,35 @@ export const AppLayout: React.FC = () => {
                   {user?.email || 'bandishivakumar880@gmail.com'}
                 </div>
               </div>
+
+              {/* Quick Sign Out button */}
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#9ca3af',
+                  padding: 6,
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#9ca3af';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <FiLogOut size={16} />
+              </button>
             </div>
           )}
 
@@ -490,6 +525,7 @@ export const AppLayout: React.FC = () => {
       >
         {/* Top Sticky Header */}
         <header
+          className="app-header"
           style={{
             height: 64,
             position: 'sticky',
@@ -538,7 +574,23 @@ export const AppLayout: React.FC = () => {
                   borderBottom: '2.5px solid #8633f3',
                 }}
               >
-                {getBreadcrumbTitle()}
+                {location.pathname.startsWith('/vehicles/') && location.pathname !== '/vehicles' ? (
+                  <span>
+                    <Link to="/vehicles" style={{ color: 'inherit', textDecoration: 'none' }}>
+                      VEHICLES
+                    </Link>{' '}
+                    / DETAILS
+                  </span>
+                ) : location.pathname.startsWith('/yards/') && location.pathname !== '/yards' ? (
+                  <span>
+                    <Link to="/yards" style={{ color: 'inherit', textDecoration: 'none' }}>
+                      YARDS
+                    </Link>{' '}
+                    / DETAILS
+                  </span>
+                ) : (
+                  getBreadcrumbTitle()
+                )}
               </div>
             </div>
           </div>
@@ -605,7 +657,7 @@ export const AppLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1, padding: '28px 32px 48px' }}>
+        <main className="app-main-content" style={{ flex: 1, padding: '28px 32px 48px' }}>
           <Outlet />
         </main>
       </div>

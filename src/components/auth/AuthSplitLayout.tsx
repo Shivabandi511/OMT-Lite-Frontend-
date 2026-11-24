@@ -8,7 +8,7 @@ interface AuthSplitLayoutProps {
 export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) => {
   return (
     <div className="auth-split-layout">
-      {/* Left Brand Panel */}
+      {/* Left Brand Panel (Desktop) */}
       <div className="auth-left-panel">
         {/* Top Logo */}
         <div className="auth-brand-logo">
@@ -86,6 +86,21 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
 
       {/* Right Form Card Panel */}
       <div className="auth-right-panel">
+        {/* Mobile Brand Logo Header (Visible on screens <= 900px) */}
+        <div className="auth-mobile-logo">
+          <svg width="34" height="26" viewBox="0 0 42 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="9" x2="14" y2="9" stroke="#8633f3" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="0" y1="16" x2="16" y2="16" stroke="#8633f3" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="4" y1="23" x2="14" y2="23" stroke="#8633f3" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="26" cy="16" r="10" stroke="#8633f3" strokeWidth="3" fill="#f5f1fc" />
+            <circle cx="26" cy="16" r="4.5" fill="#8633f3" />
+            <path d="M26 4V8M26 24V28M14 16H18M34 16H38M17.5 7.5L20.5 10.5M31.5 21.5L34.5 24.5M17.5 24.5L20.5 21.5M31.5 10.5L34.5 7.5" stroke="#8633f3" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          <span style={{ fontFamily: 'var(--omt-font-display)', fontWeight: 800, fontSize: 18, color: '#1e1b4b' }}>
+            OMT Lite
+          </span>
+        </div>
+
         {children}
       </div>
     </div>

@@ -49,6 +49,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div
+      className="omt-pagination-container"
       style={{
         padding: '12px 20px',
         display: 'flex',
@@ -78,7 +79,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       </div>
 
       {/* Right side: Page navigation controls & Page size selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="omt-pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Navigation Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {/* Previous Page Button */}
